@@ -1,35 +1,109 @@
 linters:
+  enable-all: false
+  disable-all: true
   enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - decorder
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
+    # - exhaustive
+    - exportloopref
+    - forcetypeassert
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    # - godox
+    - goerr113
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    - gomnd
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - grouper
+    - importas
+    - interfacebloat
+    - ireturn
+    - lll
+    - loggercheck
+    - maintidx
+    - makezero
+    - misspell
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - prealloc
+    - predeclared
+    - promlinter
+    - reassign
+    - revive
+    # - rowserrcheck
+    # - sqlclosecheck
+    # - structcheck
+    - stylecheck
     - tagliatelle
+    - tenv
+    - testableexamples
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - usestdlibvars
+    # - wastedassign
+    - whitespace
+    - wsl
+  fast: false
 
 run:
-  skip-dirs:
-    - build
-    - artifacts
+  timeout: 3m
 
 linters-settings:
   tagliatelle:
     case:
-      use-field-name: true
       rules:
-        json: camel
         yaml: kebab
-        xml: camel
-        bson: camel
-        avro: snake
-        mapstructure: kebab
+  gofumpt:
+    extra-rules: true
+    lang-version: "1.21"
 
 issues:
   exclude-rules:
-    - path: _test\.go
+    - path: (.+)_test.go
       linters:
-        - gocyclo
-        - errcheck
-        - dupl
         - gosec
         - gochecknoglobals
-        - testpackage
-    - path: cmd/git-sv/main.go
-      linters:
-        - gochecknoglobals
-        - funlen
+        - prealloc

@@ -1,0 +1,17 @@
+---
+when:
+  - event: [pull_request, tag]
+  - event: [push, manual]
+    branch:
+      - ${CI_REPO_DEFAULT_BRANCH}
+
+steps:
+  lint:
+    image: docker.io/library/golang:1.21
+    commands:
+      - make lint
+
+  test:
+    image: docker.io/library/golang:1.21
+    commands:
+      - make test

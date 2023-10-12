@@ -1,0 +1,25 @@
+FROM --platform=$BUILDPLATFORM golang:1.21@sha256:19600fdcae402165dcdab18cb9649540bde6be7274dedb5d205b2f84029fe909 as build
+
+ARG TARGETOS
+ARG TARGETARCH
+
+ADD . /src
+WORKDIR /src
+
+RUN make build
+
+FROM alpine:3.18@sha256:eece025e432126ce23f223450a0326fbebde39cdf496a85d8c016293fc851978
+
+LABEL maintainer="Robert Kaussow <mail@thegeeklab.de>"
+LABEL org.opencontainers.image.authors="Robert Kaussow <mail@thegeeklab.de>"
+LABEL org.opencontainers.image.title="git-sv"
+LABEL org.opencontainers.image.url="https://github.com/thegeeklab/git-sv"
+LABEL org.opencontainers.image.source="https://github.com/thegeeklab/git-sv"
+LABEL org.opencontainers.image.documentation="https://github.com/thegeeklab/git-sv"
+
+RUN apk --update add --no-cache git && \
+    rm -rf /var/cache/apk/* && \
+    rm -rf /tmp/*
+
+COPY --from=build /src/dist/git-sv /bin/git-sv
+ENTRYPOINT ["/bin/git-sv"]

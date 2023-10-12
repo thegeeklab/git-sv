@@ -16,20 +16,104 @@ func TestSemVerCommitsProcessorImpl_NextVersion(t *testing.T) {
 		want          *semver.Version
 		wantUpdated   bool
 	}{
-		{"no update", true, version("0.0.0"), []GitCommitLog{}, version("0.0.0"), false},
-		{"no update without version", true, nil, []GitCommitLog{}, nil, false},
-		{"no update on unknown type", true, version("0.0.0"), []GitCommitLog{commitlog("a", map[string]string{}, "a")}, version("0.0.0"), false},
-		{"no update on unmapped known type", false, version("0.0.0"), []GitCommitLog{commitlog("none", map[string]string{}, "a")}, version("0.0.0"), false},
-		{"update patch on unknown type", false, version("0.0.0"), []GitCommitLog{commitlog("a", map[string]string{}, "a")}, version("0.0.1"), true},
-		{"patch update", false, version("0.0.0"), []GitCommitLog{commitlog("patch", map[string]string{}, "a")}, version("0.0.1"), true},
-		{"patch update without version", false, nil, []GitCommitLog{commitlog("patch", map[string]string{}, "a")}, nil, true},
-		{"minor update", false, version("0.0.0"), []GitCommitLog{commitlog("patch", map[string]string{}, "a"), commitlog("minor", map[string]string{}, "a")}, version("0.1.0"), true},
-		{"major update", false, version("0.0.0"), []GitCommitLog{commitlog("patch", map[string]string{}, "a"), commitlog("major", map[string]string{}, "a")}, version("1.0.0"), true},
-		{"breaking change update", false, version("0.0.0"), []GitCommitLog{commitlog("patch", map[string]string{}, "a"), commitlog("patch", map[string]string{"breaking-change": "break"}, "a")}, version("1.0.0"), true},
+		{
+			"no update",
+			true,
+			version("0.0.0"),
+			[]GitCommitLog{},
+			version("0.0.0"),
+			false,
+		},
+		{
+			"no update without version",
+			true,
+			nil,
+			[]GitCommitLog{},
+			nil,
+			false,
+		},
+		{
+			"no update on unknown type",
+			true,
+			version("0.0.0"),
+			[]GitCommitLog{commitlog("a", map[string]string{}, "a")},
+			version("0.0.0"),
+			false,
+		},
+		{
+			"no update on unmapped known type",
+			false,
+			version("0.0.0"),
+			[]GitCommitLog{commitlog("none", map[string]string{}, "a")},
+			version("0.0.0"),
+			false,
+		},
+		{
+			"update patch on unknown type",
+			false,
+			version("0.0.0"),
+			[]GitCommitLog{commitlog("a", map[string]string{}, "a")},
+			version("0.0.1"),
+			true,
+		},
+		{
+			"patch update",
+			false, version("0.0.0"),
+			[]GitCommitLog{commitlog("patch", map[string]string{}, "a")},
+			version("0.0.1"), true,
+		},
+		{
+			"patch update without version",
+			false,
+			nil,
+			[]GitCommitLog{commitlog("patch", map[string]string{}, "a")},
+			nil,
+			true,
+		},
+		{
+			"minor update",
+			false,
+			version("0.0.0"),
+			[]GitCommitLog{
+				commitlog("patch", map[string]string{}, "a"),
+				commitlog("minor", map[string]string{}, "a"),
+			},
+			version("0.1.0"),
+			true,
+		},
+		{
+			"major update",
+			false,
+			version("0.0.0"),
+			[]GitCommitLog{
+				commitlog("patch", map[string]string{}, "a"),
+				commitlog("major", map[string]string{}, "a"),
+			},
+			version("1.0.0"),
+			true,
+		},
+		{
+			"breaking change update",
+			false,
+			version("0.0.0"),
+			[]GitCommitLog{
+				commitlog("patch", map[string]string{}, "a"),
+				commitlog("patch", map[string]string{"breaking-change": "break"}, "a"),
+			},
+			version("1.0.0"),
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewSemVerCommitsProcessor(VersioningConfig{UpdateMajor: []string{"major"}, UpdateMinor: []string{"minor"}, UpdatePatch: []string{"patch"}, IgnoreUnknown: tt.ignoreUnknown}, CommitMessageConfig{Types: []string{"major", "minor", "patch", "none"}})
+			p := NewSemVerCommitsProcessor(
+				VersioningConfig{
+					UpdateMajor:   []string{"major"},
+					UpdateMinor:   []string{"minor"},
+					UpdatePatch:   []string{"patch"},
+					IgnoreUnknown: tt.ignoreUnknown,
+				},
+				CommitMessageConfig{Types: []string{"major", "minor", "patch", "none"}})
 			got, gotUpdated := p.NextVersion(tt.version, tt.commits)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("SemVerCommitsProcessorImpl.NextVersion() Version = %v, want %v", got, tt.want)
@@ -57,6 +141,7 @@ func TestToVersion(t *testing.T) {
 			got, err := ToVersion(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToVersion() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {

@@ -1,89 +1,101 @@
-.PHONY: usage build lint lint-autofix test test-coverage test-show-coverage run tidy release release-all
+# renovate: datasource=github-releases depName=mvdan/gofumpt
+GOFUMPT_PACKAGE_VERSION := v0.5.0
+# renovate: datasource=github-releases depName=golangci/golangci-lint
+GOLANGCI_LINT_PACKAGE_VERSION := v1.54.2
 
-OK_COLOR=\033[32;01m
-NO_COLOR=\033[0m
-ERROR_COLOR=\033[31;01m
-WARN_COLOR=\033[33;01m
+EXECUTABLE := git-sv
 
-PKGS = $(shell go list ./...)
-BIN = git-sv
+DIST := dist
+DIST_DIRS := $(DIST)
+IMPORT := github.com/thegeeklab/$(EXECUTABLE)
 
-ECHOFLAGS ?=
+GO ?= go
+CWD ?= $(shell pwd)
+PACKAGES ?= $(shell go list ./...)
+SOURCES ?= $(shell find . -name "*.go" -type f)
 
-BUILD_TIME = $(shell date +"%Y%m%d%H%M")
-VERSION ?= dev-$(BUILD_TIME)
+GOFUMPT_PACKAGE ?= mvdan.cc/gofumpt@$(GOFUMPT_PACKAGE_VERSION)
+GOLANGCI_LINT_PACKAGE ?= github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_PACKAGE_VERSION)
+XGO_PACKAGE ?= src.techknowlogick.com/xgo@latest
 
-BUILDOS ?= linux
-BUILDARCH ?= amd64
-BUILDENVS ?= CGO_ENABLED=0 GOOS=$(BUILDOS) GOARCH=$(BUILDARCH)
-BUILDFLAGS ?= -a -installsuffix cgo --ldflags '-X main.Version=$(VERSION) -extldflags "-lm -lstdc++ -static"'
+GENERATE ?=
+XGO_VERSION := go-1.21.x
+XGO_TARGETS ?= linux/amd64,linux/arm-6,linux/arm-7,linux/arm64
 
-COMPRESS_TYPE ?= targz
+TARGETOS ?= linux
+TARGETARCH ?= amd64
+ifneq ("$(TARGETVARIANT)","")
+GOARM ?= $(subst v,,$(TARGETVARIANT))
+endif
+TAGS ?= netgo,osusergo
 
-usage: Makefile
-	@echo $(ECHOFLAGS) "to use make call:"
-	@echo $(ECHOFLAGS) "    make <action>"
-	@echo $(ECHOFLAGS) ""
-	@echo $(ECHOFLAGS) "list of available actions:"
-	@sed -n 's/^##//p' $< | column -t -s ':' | sed -e 's/^/ /'
-
-## build: build git-sv
-build: test
-	@echo $(ECHOFLAGS) "$(OK_COLOR)==> Building binary ($(BUILDOS)/$(BUILDARCH)/$(BIN))...$(NO_COLOR)"
-	@$(BUILDENVS) go build -v $(BUILDFLAGS) -o bin/$(BUILDOS)_$(BUILDARCH)/$(BIN) ./cmd/git-sv
-
-## lint: run golangci-lint without autofix
-lint:
-	@echo $(ECHOFLAGS) "$(OK_COLOR)==> Running golangci-lint...$(NO_COLOR)"
-	@golangci-lint run ./... --config .golangci.yml
-
-## lint-autofix: run golangci-lint with autofix enabled
-lint-autofix:
-	@echo $(ECHOFLAGS) "$(OK_COLOR)==> Running golangci-lint...$(NO_COLOR)"
-	@golangci-lint run ./... --config .golangci.yml --fix
-
-## test: run unit tests
-test:
-	@echo $(ECHOFLAGS) "$(OK_COLOR)==> Running tests...$(NO_COLOR)"
-	@go test $(PKGS)
-
-## test-coverage: run tests with coverage
-test-coverage:
-	@echo $(ECHOFLAGS) "$(OK_COLOR)==> Running tests with coverage...$(NO_COLOR)"
-	@go test -race -covermode=atomic -coverprofile coverage.out ./...
-
-## test-show-coverage: show coverage
-test-show-coverage: test-coverage
-	@echo $(ECHOFLAGS) "$(OK_COLOR)==> Show test coverage...$(NO_COLOR)"
-	@go tool cover -html coverage.out
-
-## run: run git-sv
-run:
-	@echo $(ECHOFLAGS) "$(OK_COLOR)==> Running bin/$(BUILDOS)_$(BUILDARCH)/$(BIN)...$(NO_COLOR)"
-	@./bin/$(BUILDOS)_$(BUILDARCH)/$(BIN) $(args)
-
-## tidy: execute go mod tidy
-tidy:
-	@echo $(ECHOFLAGS) "$(OK_COLOR)==> runing tidy"
-	@go mod tidy
-
-## release: prepare binary for release
-release:
-	make build
-ifeq ($(COMPRESS_TYPE), zip)
-	@zip -j bin/git-sv_$(VERSION)_$(BUILDOS)_$(BUILDARCH).zip bin/$(BUILDOS)_$(BUILDARCH)/$(BIN)
-else
-	@tar -czf bin/git-sv_$(VERSION)_$(BUILDOS)_$(BUILDARCH).tar.gz -C bin/$(BUILDOS)_$(BUILDARCH)/ $(BIN)
+ifndef VERSION
+	ifneq ($(CI_COMMIT_TAG),)
+		VERSION ?= $(subst v,,$(CI_COMMIT_TAG))
+	else
+		VERSION ?= $(shell git rev-parse --short HEAD)
+	endif
 endif
 
-## release-all: prepare linux, darwin and windows binary for release (requires sv4git)
-release-all:
-	@rm -rf bin
+ifndef DATE
+	DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%S%z")
+endif
 
-	VERSION=$(shell git sv nv)                   BUILDOS=linux   BUILDARCH=amd64 make release
-	VERSION=$(shell git sv nv)                   BUILDOS=darwin  BUILDARCH=amd64 make release
-	VERSION=$(shell git sv nv) COMPRESS_TYPE=zip BUILDOS=windows BUILDARCH=amd64 make release
+LDFLAGS += -s -w -X "main.BuildVersion=$(VERSION)" -X "main.BuildDate=$(DATE)"
 
-	VERSION=$(shell git sv nv)                   BUILDOS=linux   BUILDARCH=arm64 make release
-	VERSION=$(shell git sv nv)                   BUILDOS=darwin  BUILDARCH=arm64 make release
-	VERSION=$(shell git sv nv) COMPRESS_TYPE=zip BUILDOS=windows BUILDARCH=arm64 make release
+.PHONY: all
+all: clean build
+
+.PHONY: clean
+clean:
+	$(GO) clean -i ./...
+	rm -rf $(DIST_DIRS)
+
+.PHONY: fmt
+fmt:
+	$(GO) run $(GOFUMPT_PACKAGE) -extra -w $(SOURCES)
+
+.PHONY: golangci-lint
+golangci-lint:
+	$(GO) run $(GOLANGCI_LINT_PACKAGE) run
+
+.PHONY: lint
+lint: golangci-lint
+
+.PHONY: generate
+generate:
+	$(GO) generate $(GENERATE)
+
+.PHONY: test
+test:
+	$(GO) test -v -coverprofile coverage.out $(PACKAGES)
+
+.PHONY: build
+build: $(DIST)/$(EXECUTABLE)
+
+$(DIST)/$(EXECUTABLE): $(SOURCES)
+	GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) GOARM=$(GOARM) $(GO) build -v -tags '$(TAGS)' -ldflags '-extldflags "-static" $(LDFLAGS)' -o $@ ./cmd/$(EXECUTABLE)
+
+$(DIST_DIRS):
+	mkdir -p $(DIST_DIRS)
+
+.PHONY: xgo
+xgo: | $(DIST_DIRS)
+	$(GO) run $(XGO_PACKAGE) -go $(XGO_VERSION) -v -ldflags '-extldflags "-static" $(LDFLAGS)' -tags '$(TAGS)' -targets '$(XGO_TARGETS)' -out $(EXECUTABLE) --pkg cmd/$(EXECUTABLE) .
+	cp /build/* $(CWD)/$(DIST)
+	ls -l $(CWD)/$(DIST)
+
+.PHONY: checksum
+checksum:
+	cd $(DIST); $(foreach file,$(wildcard $(DIST)/$(EXECUTABLE)-*),sha256sum $(notdir $(file)) > $(notdir $(file)).sha256;)
+	ls -l $(CWD)/$(DIST)
+
+.PHONY: release
+release: xgo checksum
+
+.PHONY: deps
+deps:
+	$(GO) mod download
+	$(GO) install $(GOFUMPT_PACKAGE)
+	$(GO) install $(GOLANGCI_LINT_PACKAGE)
+	$(GO) install $(XGO_PACKAGE)

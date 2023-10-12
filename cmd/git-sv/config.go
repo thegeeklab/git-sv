@@ -4,27 +4,27 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"reflect"
-	"strings"
 
-	"github.com/bvieira/sv4git/v2/sv"
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/thegeeklab/git-sv/v2/sv"
 	"gopkg.in/yaml.v3"
 )
 
 // EnvConfig env vars for cli configuration.
 type EnvConfig struct {
-	Home string `envconfig:"SV4GIT_HOME" default:""`
+	Home string `envconfig:"GITSV_HOME" default:""`
 }
 
 func loadEnvConfig() EnvConfig {
 	var c EnvConfig
+
 	err := envconfig.Process("", &c)
 	if err != nil {
 		log.Fatal("failed to load env config, error: ", err.Error())
 	}
+
 	return c
 }
 
@@ -38,20 +38,6 @@ type Config struct {
 	CommitMessage sv.CommitMessageConfig `yaml:"commit-message"`
 }
 
-func getRepoPath() (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", combinedOutputErr(err, out)
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func combinedOutputErr(err error, out []byte) error {
-	msg := strings.Split(string(out), "\n")
-	return fmt.Errorf("%v - %s", err, msg[0])
-}
-
 func readConfig(filepath string) (Config, error) {
 	content, rerr := os.ReadFile(filepath)
 	if rerr != nil {
@@ -59,9 +45,10 @@ func readConfig(filepath string) (Config, error) {
 	}
 
 	var cfg Config
+
 	cerr := yaml.Unmarshal(content, &cfg)
 	if cerr != nil {
-		return Config{}, fmt.Errorf("could not parse config from path: %s, error: %v", filepath, cerr)
+		return Config{}, fmt.Errorf("could not parse config from path: %s, error: %w", filepath, cerr)
 	}
 
 	return cfg, nil
@@ -71,6 +58,7 @@ func defaultConfig() Config {
 	skipDetached := false
 	pattern := "%d.%d.%d"
 	filter := ""
+
 	return Config{
 		Version: "1.1",
 		Versioning: sv.VersioningConfig{
@@ -116,6 +104,7 @@ func merge(dst *Config, src Config) error {
 			dst.ReleaseNotes.Headers = src.ReleaseNotes.Headers
 		}
 	}
+
 	return err
 }
 
@@ -127,6 +116,7 @@ func (t *mergeTransformer) Transformer(typ reflect.Type) func(dst, src reflect.V
 			if dst.CanSet() && !src.IsNil() {
 				dst.Set(src)
 			}
+
 			return nil
 		}
 	}
@@ -136,9 +126,11 @@ func (t *mergeTransformer) Transformer(typ reflect.Type) func(dst, src reflect.V
 			if dst.CanSet() && !src.IsNil() {
 				dst.Set(src)
 			}
+
 			return nil
 		}
 	}
+
 	return nil
 }
 
@@ -146,6 +138,7 @@ func migrateConfig(cfg Config, filename string) Config {
 	if cfg.ReleaseNotes.Headers == nil {
 		return cfg
 	}
+
 	warnf("config 'release-notes.headers' on %s is deprecated, please use 'sections' instead!", filename)
 
 	return Config{
@@ -162,14 +155,29 @@ func migrateConfig(cfg Config, filename string) Config {
 
 func migrateReleaseNotesConfig(headers map[string]string) []sv.ReleaseNotesSectionConfig {
 	order := []string{"feat", "fix", "refactor", "perf", "test", "build", "ci", "chore", "docs", "style"}
+
 	var sections []sv.ReleaseNotesSectionConfig
+
 	for _, key := range order {
 		if name, exists := headers[key]; exists {
-			sections = append(sections, sv.ReleaseNotesSectionConfig{Name: name, SectionType: sv.ReleaseNotesSectionTypeCommits, CommitTypes: []string{key}})
+			sections = append(
+				sections,
+				sv.ReleaseNotesSectionConfig{
+					Name:        name,
+					SectionType: sv.ReleaseNotesSectionTypeCommits,
+					CommitTypes: []string{key},
+				})
 		}
 	}
+
 	if name, exists := headers["breaking-change"]; exists {
-		sections = append(sections, sv.ReleaseNotesSectionConfig{Name: name, SectionType: sv.ReleaseNotesSectionTypeBreakingChanges})
+		sections = append(
+			sections,
+			sv.ReleaseNotesSectionConfig{
+				Name:        name,
+				SectionType: sv.ReleaseNotesSectionTypeBreakingChanges,
+			})
 	}
+
 	return sections
 }

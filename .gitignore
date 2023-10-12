@@ -1,23 +1,6 @@
-# Binaries for programs and plugins
-bin/
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+/dist
+/release
+/git-sv*
 
-# Test binary, build with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-*.sample
-todo
-
-# Additional generated artifacts
-artifacts/
-
-# Mac metadata
-
-.DS_Store
+coverage.out
+CHANGELOG.md

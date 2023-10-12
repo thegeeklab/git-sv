@@ -16,6 +16,7 @@ func (c CommitMessageConfig) IssueFooterConfig() CommitMessageFooterConfig {
 	if v, exists := c.Footer[issueMetadataKey]; exists {
 		return v
 	}
+
 	return CommitMessageFooterConfig{}
 }
 
@@ -80,6 +81,7 @@ func (cfg ReleaseNotesConfig) sectionConfig(sectionType string) *ReleaseNotesSec
 			return &sectionCfg
 		}
 	}
+
 	return nil
 }
 

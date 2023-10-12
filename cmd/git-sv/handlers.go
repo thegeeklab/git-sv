@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,19 +11,32 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/bvieira/sv4git/v2/sv"
+	"github.com/thegeeklab/git-sv/v2/sv"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v3"
 )
 
+const laxFilePerm = 0o644
+
+var (
+	errCanNotCreateTagFlag = errors.New("cannot define tag flag with range, start or end flags")
+	errUnknownTag          = errors.New("unknown tag")
+	errReadCommitMessage   = errors.New("failed to read commit message")
+	errAppendFooter        = errors.New("failed to append meta-informations on footer")
+	errInvalidRange        = errors.New("invalid log range")
+)
+
 func configDefaultHandler() func(c *cli.Context) error {
 	cfg := defaultConfig()
+
 	return func(c *cli.Context) error {
 		content, err := yaml.Marshal(&cfg)
 		if err != nil {
 			return err
 		}
+
 		fmt.Println(string(content))
+
 		return nil
 	}
 }
@@ -33,7 +47,9 @@ func configShowHandler(cfg Config) func(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+
 		fmt.Println(string(content))
+
 		return nil
 	}
 }
@@ -44,9 +60,11 @@ func currentVersionHandler(git sv.Git) func(c *cli.Context) error {
 
 		currentVer, err := sv.ToVersion(lastTag)
 		if err != nil {
-			return fmt.Errorf("error parsing version: %s from git tag, message: %v", lastTag, err)
+			return fmt.Errorf("error parsing version: %s from git tag, message: %w", lastTag, err)
 		}
+
 		fmt.Printf("%d.%d.%d\n", currentVer.Major(), currentVer.Minor(), currentVer.Patch())
+
 		return nil
 	}
 }
@@ -57,30 +75,62 @@ func nextVersionHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor) f
 
 		currentVer, err := sv.ToVersion(lastTag)
 		if err != nil {
-			return fmt.Errorf("error parsing version: %s from git tag, message: %v", lastTag, err)
+			return fmt.Errorf("error parsing version: %s from git tag, message: %w", lastTag, err)
 		}
 
 		commits, err := git.Log(sv.NewLogRange(sv.TagRange, lastTag, ""))
 		if err != nil {
-			return fmt.Errorf("error getting git log, message: %v", err)
+			return fmt.Errorf("error getting git log, message: %w", err)
 		}
 
 		nextVer, _ := semverProcessor.NextVersion(currentVer, commits)
+
 		fmt.Printf("%d.%d.%d\n", nextVer.Major(), nextVer.Minor(), nextVer.Patch())
+
 		return nil
+	}
+}
+
+func commitLogFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:    "t",
+			Aliases: []string{"tag"},
+			Usage:   "get commit log from a specific tag",
+		},
+		&cli.StringFlag{
+			Name:    "r",
+			Aliases: []string{"range"},
+			Usage:   "type of range of commits, use: tag, date or hash",
+			Value:   string(sv.TagRange),
+		},
+		&cli.StringFlag{
+			Name:    "s",
+			Aliases: []string{"start"},
+			Usage:   "start range of git log revision range, if date, the value is used on since flag instead",
+		},
+		&cli.StringFlag{
+			Name:    "e",
+			Aliases: []string{"end"},
+			Usage:   "end range of git log revision range, if date, the value is used on until flag instead",
+		},
 	}
 }
 
 func commitLogHandler(git sv.Git) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		var commits []sv.GitCommitLog
-		var err error
+		var (
+			commits []sv.GitCommitLog
+			err     error
+		)
+
 		tagFlag := c.String("t")
 		rangeFlag := c.String("r")
 		startFlag := c.String("s")
 		endFlag := c.String("e")
+
 		if tagFlag != "" && (rangeFlag != string(sv.TagRange) || startFlag != "" || endFlag != "") {
-			return fmt.Errorf("cannot define tag flag with range, start or end flags")
+			return errCanNotCreateTagFlag
 		}
 
 		if tagFlag != "" {
@@ -92,8 +142,9 @@ func commitLogHandler(git sv.Git) func(c *cli.Context) error {
 			}
 			commits, err = git.Log(r)
 		}
+
 		if err != nil {
-			return fmt.Errorf("error getting git log, message: %v", err)
+			return fmt.Errorf("error getting git log, message: %w", err)
 		}
 
 		for _, commit := range commits {
@@ -101,8 +152,10 @@ func commitLogHandler(git sv.Git) func(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
+
 			fmt.Println(string(content))
 		}
+
 		return nil
 	}
 }
@@ -112,6 +165,7 @@ func getTagCommits(git sv.Git, tag string) ([]sv.GitCommitLog, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return git.Log(sv.NewLogRange(sv.TagRange, prev, tag))
 }
 
@@ -124,15 +178,45 @@ func logRange(git sv.Git, rangeFlag, startFlag, endFlag string) (sv.LogRange, er
 	case string(sv.HashRange):
 		return sv.NewLogRange(sv.HashRange, startFlag, endFlag), nil
 	default:
-		return sv.LogRange{}, fmt.Errorf("invalid range: %s, expected: %s, %s or %s", rangeFlag, sv.TagRange, sv.DateRange, sv.HashRange)
+		return sv.LogRange{}, fmt.Errorf(
+			"%w: %s, expected: %s, %s or %s",
+			errInvalidRange,
+			rangeFlag,
+			sv.TagRange,
+			sv.DateRange,
+			sv.HashRange,
+		)
 	}
 }
 
-func commitNotesHandler(git sv.Git, rnProcessor sv.ReleaseNoteProcessor, outputFormatter sv.OutputFormatter) func(c *cli.Context) error {
+func commitNotesFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name: "r", Aliases: []string{"range"},
+			Usage:    "type of range of commits, use: tag, date or hash",
+			Required: true,
+		},
+		&cli.StringFlag{
+			Name:    "s",
+			Aliases: []string{"start"},
+			Usage:   "start range of git log revision range, if date, the value is used on since flag instead",
+		},
+		&cli.StringFlag{
+			Name:    "e",
+			Aliases: []string{"end"},
+			Usage:   "end range of git log revision range, if date, the value is used on until flag instead",
+		},
+	}
+}
+
+func commitNotesHandler(
+	git sv.Git, rnProcessor sv.ReleaseNoteProcessor, outputFormatter sv.OutputFormatter,
+) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		var date time.Time
 
 		rangeFlag := c.String("r")
+
 		lr, err := logRange(git, rangeFlag, c.String("s"), c.String("e"))
 		if err != nil {
 			return err
@@ -140,7 +224,7 @@ func commitNotesHandler(git sv.Git, rnProcessor sv.ReleaseNoteProcessor, outputF
 
 		commits, err := git.Log(lr)
 		if err != nil {
-			return fmt.Errorf("error getting git log from range: %s, message: %v", rangeFlag, err)
+			return fmt.Errorf("error getting git log from range: %s, message: %w", rangeFlag, err)
 		}
 
 		if len(commits) > 0 {
@@ -149,20 +233,39 @@ func commitNotesHandler(git sv.Git, rnProcessor sv.ReleaseNoteProcessor, outputF
 
 		output, err := outputFormatter.FormatReleaseNote(rnProcessor.Create(nil, "", date, commits))
 		if err != nil {
-			return fmt.Errorf("could not format release notes, message: %v", err)
+			return fmt.Errorf("could not format release notes, message: %w", err)
 		}
+
 		fmt.Println(output)
+
 		return nil
 	}
 }
 
-func releaseNotesHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor, rnProcessor sv.ReleaseNoteProcessor, outputFormatter sv.OutputFormatter) func(c *cli.Context) error {
+func releaseNotesFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:    "t",
+			Aliases: []string{"tag"},
+			Usage:   "get release note from tag",
+		},
+	}
+}
+
+func releaseNotesHandler(
+	git sv.Git,
+	semverProcessor sv.SemVerCommitsProcessor,
+	rnProcessor sv.ReleaseNoteProcessor,
+	outputFormatter sv.OutputFormatter,
+) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		var commits []sv.GitCommitLog
-		var rnVersion *semver.Version
-		var tag string
-		var date time.Time
-		var err error
+		var (
+			commits   []sv.GitCommitLog
+			rnVersion *semver.Version
+			tag       string
+			date      time.Time
+			err       error
+		)
 
 		if tag = c.String("t"); tag != "" {
 			rnVersion, date, commits, err = getTagVersionInfo(git, tag)
@@ -176,11 +279,14 @@ func releaseNotesHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor, 
 		}
 
 		releasenote := rnProcessor.Create(rnVersion, tag, date, commits)
+
 		output, err := outputFormatter.FormatReleaseNote(releasenote)
 		if err != nil {
-			return fmt.Errorf("could not format release notes, message: %v", err)
+			return fmt.Errorf("could not format release notes, message: %w", err)
 		}
+
 		fmt.Println(output)
+
 		return nil
 	}
 }
@@ -190,12 +296,12 @@ func getTagVersionInfo(git sv.Git, tag string) (*semver.Version, time.Time, []sv
 
 	previousTag, currentTag, err := getTags(git, tag)
 	if err != nil {
-		return nil, time.Time{}, nil, fmt.Errorf("error listing tags, message: %v", err)
+		return nil, time.Time{}, nil, fmt.Errorf("error listing tags, message: %w", err)
 	}
 
 	commits, err := git.Log(sv.NewLogRange(sv.TagRange, previousTag, tag))
 	if err != nil {
-		return nil, time.Time{}, nil, fmt.Errorf("error getting git log from tag: %s, message: %v", tag, err)
+		return nil, time.Time{}, nil, fmt.Errorf("error getting git log from tag: %s, message: %w", tag, err)
 	}
 
 	return tagVersion, currentTag.Date, commits, nil
@@ -209,13 +315,14 @@ func getTags(git sv.Git, tag string) (string, sv.GitTag, error) {
 
 	index := find(tag, tags)
 	if index < 0 {
-		return "", sv.GitTag{}, fmt.Errorf("tag: %s not found, check tag filter", tag)
+		return "", sv.GitTag{}, fmt.Errorf("%w: %s not found, check tag filter", errUnknownTag, tag)
 	}
 
 	previousTag := ""
 	if index > 0 {
 		previousTag = tags[index-1].Name
 	}
+
 	return previousTag, tags[index], nil
 }
 
@@ -225,15 +332,18 @@ func find(tag string, tags []sv.GitTag) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
-func getNextVersionInfo(git sv.Git, semverProcessor sv.SemVerCommitsProcessor) (*semver.Version, bool, time.Time, []sv.GitCommitLog, error) {
+func getNextVersionInfo(
+	git sv.Git, semverProcessor sv.SemVerCommitsProcessor,
+) (*semver.Version, bool, time.Time, []sv.GitCommitLog, error) {
 	lastTag := git.LastTag()
 
 	commits, err := git.Log(sv.NewLogRange(sv.TagRange, lastTag, ""))
 	if err != nil {
-		return nil, false, time.Time{}, nil, fmt.Errorf("error getting git log, message: %v", err)
+		return nil, false, time.Time{}, nil, fmt.Errorf("error getting git log, message: %w", err)
 	}
 
 	currentVer, _ := sv.ToVersion(lastTag)
@@ -248,20 +358,23 @@ func tagHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor) func(c *c
 
 		currentVer, err := sv.ToVersion(lastTag)
 		if err != nil {
-			return fmt.Errorf("error parsing version: %s from git tag, message: %v", lastTag, err)
+			return fmt.Errorf("error parsing version: %s from git tag, message: %w", lastTag, err)
 		}
 
 		commits, err := git.Log(sv.NewLogRange(sv.TagRange, lastTag, ""))
 		if err != nil {
-			return fmt.Errorf("error getting git log, message: %v", err)
+			return fmt.Errorf("error getting git log, message: %w", err)
 		}
 
 		nextVer, _ := semverProcessor.NextVersion(currentVer, commits)
 		tagname, err := git.Tag(*nextVer)
+
 		fmt.Println(tagname)
+
 		if err != nil {
-			return fmt.Errorf("error generating tag version: %s, message: %v", nextVer.String(), err)
+			return fmt.Errorf("error generating tag version: %s, message: %w", nextVer.String(), err)
 		}
+
 		return nil
 	}
 }
@@ -269,8 +382,10 @@ func tagHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor) func(c *c
 func getCommitType(cfg Config, p sv.MessageProcessor, input string) (string, error) {
 	if input == "" {
 		t, err := promptType(cfg.CommitMessage.Types)
+
 		return t.Type, err
 	}
+
 	return input, p.ValidateType(input)
 }
 
@@ -278,6 +393,7 @@ func getCommitScope(cfg Config, p sv.MessageProcessor, input string, noScope boo
 	if input == "" && !noScope {
 		return promptScope(cfg.CommitMessage.Scope.Values)
 	}
+
 	return input, p.ValidateScope(input)
 }
 
@@ -285,6 +401,7 @@ func getCommitDescription(p sv.MessageProcessor, input string) (string, error) {
 	if input == "" {
 		return promptSubject()
 	}
+
 	return input, p.ValidateDescription(input)
 }
 
@@ -294,17 +411,21 @@ func getCommitBody(noBody bool) (string, error) {
 	}
 
 	var fullBody strings.Builder
+
 	for body, err := promptBody(); body != "" || err != nil; body, err = promptBody() {
 		if err != nil {
 			return "", err
 		}
+
 		if fullBody.Len() > 0 {
 			fullBody.WriteString("\n")
 		}
+
 		if body != "" {
 			fullBody.WriteString(body)
 		}
 	}
+
 	return fullBody.String(), nil
 }
 
@@ -338,11 +459,57 @@ func getCommitBreakingChange(noBreaking bool, input string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if !hasBreakingChanges {
 		return "", nil
 	}
 
 	return promptBreakingChanges()
+}
+
+func commitFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "no-scope",
+			Aliases: []string{"nsc"},
+			Usage:   "do not prompt for commit scope",
+		},
+		&cli.BoolFlag{
+			Name:    "no-body",
+			Aliases: []string{"nbd"},
+			Usage:   "do not prompt for commit body",
+		},
+		&cli.BoolFlag{
+			Name:    "no-issue",
+			Aliases: []string{"nis"},
+			Usage:   "do not prompt for commit issue, will try to recover from branch if enabled",
+		},
+		&cli.BoolFlag{
+			Name:    "no-breaking",
+			Aliases: []string{"nbc"},
+			Usage:   "do not prompt for breaking changes",
+		},
+		&cli.StringFlag{
+			Name:    "type",
+			Aliases: []string{"t"},
+			Usage:   "define commit type",
+		},
+		&cli.StringFlag{
+			Name:    "scope",
+			Aliases: []string{"s"},
+			Usage:   "define commit scope",
+		},
+		&cli.StringFlag{
+			Name:    "description",
+			Aliases: []string{"d"},
+			Usage:   "define commit description",
+		},
+		&cli.StringFlag{
+			Name:    "breaking-change",
+			Aliases: []string{"b"},
+			Usage:   "define commit breaking change message",
+		},
+	}
 }
 
 func commitHandler(cfg Config, git sv.Git, messageProcessor sv.MessageProcessor) func(c *cli.Context) error {
@@ -386,22 +553,54 @@ func commitHandler(cfg Config, git sv.Git, messageProcessor sv.MessageProcessor)
 			return err
 		}
 
-		header, body, footer := messageProcessor.Format(sv.NewCommitMessage(ctype, scope, subject, fullBody, issue, breakingChange))
+		header, body, footer := messageProcessor.Format(
+			sv.NewCommitMessage(ctype, scope, subject, fullBody, issue, breakingChange),
+		)
 
 		err = git.Commit(header, body, footer)
 		if err != nil {
-			return fmt.Errorf("error executing git commit, message: %v", err)
+			return fmt.Errorf("error executing git commit, message: %w", err)
 		}
+
 		return nil
 	}
 }
 
-func changelogHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor, rnProcessor sv.ReleaseNoteProcessor, formatter sv.OutputFormatter) func(c *cli.Context) error {
+func changelogFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.IntFlag{
+			Name:    "size",
+			Value:   10, //nolint:gomnd
+			Aliases: []string{"n"},
+			Usage:   "get changelog from last 'n' tags",
+		},
+		&cli.BoolFlag{
+			Name:  "all",
+			Usage: "ignore size parameter, get changelog for every tag",
+		},
+		&cli.BoolFlag{
+			Name:  "add-next-version",
+			Usage: "add next version on change log (commits since last tag, but only if there is a new version to release)",
+		},
+		&cli.BoolFlag{
+			Name:  "semantic-version-only",
+			Usage: "only show tags 'SemVer-ish'",
+		},
+	}
+}
+
+func changelogHandler(
+	git sv.Git,
+	semverProcessor sv.SemVerCommitsProcessor,
+	rnProcessor sv.ReleaseNoteProcessor,
+	formatter sv.OutputFormatter,
+) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		tags, err := git.Tags()
 		if err != nil {
 			return err
 		}
+
 		sort.Slice(tags, func(i, j int) bool {
 			return tags[i].Date.After(tags[j].Date)
 		})
@@ -418,10 +617,12 @@ func changelogHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor, rnP
 			if uerr != nil {
 				return uerr
 			}
+
 			if updated {
 				releaseNotes = append(releaseNotes, rnProcessor.Create(rnVersion, "", date, commits))
 			}
 		}
+
 		for i, tag := range tags {
 			if !all && i >= size {
 				break
@@ -438,7 +639,7 @@ func changelogHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor, rnP
 
 			commits, err := git.Log(sv.NewLogRange(sv.TagRange, previousTag, tag.Name))
 			if err != nil {
-				return fmt.Errorf("error getting git log from tag: %s, message: %v", tag.Name, err)
+				return fmt.Errorf("error getting git log from tag: %s, message: %w", tag.Name, err)
 			}
 
 			currentVer, _ := sv.ToVersion(tag.Name)
@@ -447,11 +648,32 @@ func changelogHandler(git sv.Git, semverProcessor sv.SemVerCommitsProcessor, rnP
 
 		output, err := formatter.FormatChangelog(releaseNotes)
 		if err != nil {
-			return fmt.Errorf("could not format changelog, message: %v", err)
+			return fmt.Errorf("could not format changelog, message: %w", err)
 		}
+
 		fmt.Println(output)
 
 		return nil
+	}
+}
+
+func validateCommitMessageFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:     "path",
+			Required: true,
+			Usage:    "git working directory",
+		},
+		&cli.StringFlag{
+			Name:     "file",
+			Required: true,
+			Usage:    "name of the file that contains the commit log message",
+		},
+		&cli.StringFlag{
+			Name:     "source",
+			Required: true,
+			Usage:    "source of the commit message",
+		},
 	}
 }
 
@@ -462,11 +684,13 @@ func validateCommitMessageHandler(git sv.Git, messageProcessor sv.MessageProcess
 
 		if messageProcessor.SkipBranch(branch, derr == nil && detached) {
 			warnf("commit message validation skipped, branch in ignore list or detached...")
+
 			return nil
 		}
 
 		if source := c.String("source"); source == "merge" {
 			warnf("commit message validation skipped, ignoring source: %s...", source)
+
 			return nil
 		}
 
@@ -474,24 +698,26 @@ func validateCommitMessageHandler(git sv.Git, messageProcessor sv.MessageProcess
 
 		commitMessage, err := readFile(filepath)
 		if err != nil {
-			return fmt.Errorf("failed to read commit message, error: %s", err.Error())
+			return fmt.Errorf("%w: %s", errReadCommitMessage, err.Error())
 		}
 
 		if err := messageProcessor.Validate(commitMessage); err != nil {
-			return fmt.Errorf("invalid commit message, error: %s", err.Error())
+			return fmt.Errorf("%w: %s", errReadCommitMessage, err.Error())
 		}
 
 		msg, err := messageProcessor.Enhance(branch, commitMessage)
 		if err != nil {
 			warnf("could not enhance commit message, %s", err.Error())
+
 			return nil
 		}
+
 		if msg == "" {
 			return nil
 		}
 
 		if err := appendOnFile(msg, filepath); err != nil {
-			return fmt.Errorf("failed to append meta-informations on footer, error: %s", err.Error())
+			return fmt.Errorf("%w: %s", errAppendFooter, err.Error())
 		}
 
 		return nil
@@ -503,17 +729,19 @@ func readFile(filepath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(f), nil
 }
 
 func appendOnFile(message, filepath string) error {
-	f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, laxFilePerm)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	_, err = f.WriteString(message)
+
 	return err
 }
 
@@ -521,5 +749,6 @@ func str(value, defaultValue string) string {
 	if value != "" {
 		return value
 	}
+
 	return defaultValue
 }

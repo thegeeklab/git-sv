@@ -32,8 +32,20 @@ func Test_getSection(t *testing.T) {
 		sectionName string
 		want        ReleaseNoteSection
 	}{
-		{"existing section", []ReleaseNoteSection{ReleaseNoteCommitsSection{Name: "section 0"}, ReleaseNoteCommitsSection{Name: "section 1"}, ReleaseNoteCommitsSection{Name: "section 2"}}, "section 1", ReleaseNoteCommitsSection{Name: "section 1"}},
-		{"nonexisting section", []ReleaseNoteSection{ReleaseNoteCommitsSection{Name: "section 0"}, ReleaseNoteCommitsSection{Name: "section 1"}, ReleaseNoteCommitsSection{Name: "section 2"}}, "section 10", nil},
+		{
+			"existing section", []ReleaseNoteSection{
+				ReleaseNoteCommitsSection{Name: "section 0"},
+				ReleaseNoteCommitsSection{Name: "section 1"},
+				ReleaseNoteCommitsSection{Name: "section 2"},
+			}, "section 1", ReleaseNoteCommitsSection{Name: "section 1"},
+		},
+		{
+			"nonexisting section", []ReleaseNoteSection{
+				ReleaseNoteCommitsSection{Name: "section 0"},
+				ReleaseNoteCommitsSection{Name: "section 1"},
+				ReleaseNoteCommitsSection{Name: "section 2"},
+			}, "section 10", nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

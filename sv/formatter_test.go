@@ -73,6 +73,7 @@ func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 
 func emptyReleaseNote(tag string, date time.Time) ReleaseNote {
 	v, _ := semver.NewVersion(tag)
+
 	return ReleaseNote{
 		Version: v,
 		Tag:     tag,
@@ -83,11 +84,24 @@ func emptyReleaseNote(tag string, date time.Time) ReleaseNote {
 func fullReleaseNote(tag string, date time.Time) ReleaseNote {
 	v, _ := semver.NewVersion(tag)
 	sections := []ReleaseNoteSection{
-		newReleaseNoteCommitsSection("Features", []string{"feat"}, []GitCommitLog{commitlog("feat", map[string]string{}, "a")}),
-		newReleaseNoteCommitsSection("Bug Fixes", []string{"fix"}, []GitCommitLog{commitlog("fix", map[string]string{}, "a")}),
-		newReleaseNoteCommitsSection("Build", []string{"build"}, []GitCommitLog{commitlog("build", map[string]string{}, "a")}),
+		newReleaseNoteCommitsSection(
+			"Features",
+			[]string{"feat"},
+			[]GitCommitLog{commitlog("feat", map[string]string{}, "a")},
+		),
+		newReleaseNoteCommitsSection(
+			"Bug Fixes",
+			[]string{"fix"},
+			[]GitCommitLog{commitlog("fix", map[string]string{}, "a")},
+		),
+		newReleaseNoteCommitsSection(
+			"Build",
+			[]string{"build"},
+			[]GitCommitLog{commitlog("build", map[string]string{}, "a")},
+		),
 		ReleaseNoteBreakingChangeSection{"Breaking Changes", []string{"break change message"}},
 	}
+
 	return releaseNote(v, tag, date, sections, map[string]struct{}{"a": {}})
 }
 
@@ -100,15 +114,18 @@ func Test_checkTemplatesExecution(t *testing.T) {
 		{"changelog-md.tpl", changelogVariables("v1.0.0", "v1.0.1")},
 		{"releasenotes-md.tpl", releaseNotesVariables("v1.0.0")},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.template, func(t *testing.T) {
 			var b bytes.Buffer
 			err := tpls.ExecuteTemplate(&b, tt.template, tt.variables)
 			if err != nil {
 				t.Errorf("invalid template err = %v", err)
+
 				return
 			}
-			if len(b.Bytes()) <= 0 {
+
+			if len(b.Bytes()) == 0 {
 				t.Errorf("empty template")
 			}
 		})
@@ -118,11 +135,20 @@ func Test_checkTemplatesExecution(t *testing.T) {
 func releaseNotesVariables(release string) releaseNoteTemplateVariables {
 	return releaseNoteTemplateVariables{
 		Release: release,
-		Date:    time.Date(2006, 1, 02, 0, 0, 0, 0, time.UTC),
+		Date:    time.Date(2006, 1, 0o2, 0, 0, 0, 0, time.UTC),
 		Sections: []ReleaseNoteSection{
-			newReleaseNoteCommitsSection("Features", []string{"feat"}, []GitCommitLog{commitlog("feat", map[string]string{}, "a")}),
-			newReleaseNoteCommitsSection("Bug Fixes", []string{"fix"}, []GitCommitLog{commitlog("fix", map[string]string{}, "a")}),
-			newReleaseNoteCommitsSection("Build", []string{"build"}, []GitCommitLog{commitlog("build", map[string]string{}, "a")}),
+			newReleaseNoteCommitsSection("Features",
+				[]string{"feat"},
+				[]GitCommitLog{commitlog("feat", map[string]string{}, "a")},
+			),
+			newReleaseNoteCommitsSection("Bug Fixes",
+				[]string{"fix"},
+				[]GitCommitLog{commitlog("fix", map[string]string{}, "a")},
+			),
+			newReleaseNoteCommitsSection("Build",
+				[]string{"build"},
+				[]GitCommitLog{commitlog("build", map[string]string{}, "a")},
+			),
 			ReleaseNoteBreakingChangeSection{"Breaking Changes", []string{"break change message"}},
 		},
 	}
@@ -130,9 +156,10 @@ func releaseNotesVariables(release string) releaseNoteTemplateVariables {
 
 func changelogVariables(releases ...string) []releaseNoteTemplateVariables {
 	var variables []releaseNoteTemplateVariables
+
 	for _, r := range releases {
 		variables = append(variables, releaseNotesVariables(r))
 	}
-	return variables
 
+	return variables
 }

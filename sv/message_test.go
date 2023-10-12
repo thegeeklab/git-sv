@@ -146,23 +146,55 @@ func TestMessageProcessorImpl_Validate(t *testing.T) {
 		message string
 		wantErr bool
 	}{
-		{"single line valid message", ccfg, "feat: add something", false},
-		{"single line valid message with scope", ccfg, "feat(scope): add something", false},
+		{
+			"single line valid message",
+			ccfg,
+			"feat: add something", false,
+		},
+		{
+			"single line valid message with scope",
+			ccfg,
+			"feat(scope): add something", false,
+		},
 		{"single line valid scope from list", ccfgWithScope, "feat(scope): add something", false},
 		{"single line invalid scope from list", ccfgWithScope, "feat(invalid): add something", true},
-		{"single line invalid type message", ccfg, "something: add something", true},
-		{"single line invalid type message", ccfg, "feat?: add something", true},
+		{
+			"single line invalid type message",
+			ccfg,
+			"something: add something", true,
+		},
+		{
+			"single line invalid type message",
+			ccfg,
+			"feat?: add something", true,
+		},
 
-		{"multi line valid message", ccfg, `feat: add something
-		
-		team: x`, false},
+		{
+			"multi line valid message",
+			ccfg,
+			`feat: add something
 
-		{"multi line invalid message", ccfg, `feat add something
-		
-		team: x`, true},
+		team: x`, false,
+		},
 
-		{"support ! for breaking change", ccfg, "feat!: add something", false},
-		{"support ! with scope for breaking change", ccfg, "feat(scope)!: add something", false},
+		{
+			"multi line invalid message",
+			ccfg,
+			`feat add something
+
+		team: x`, true,
+		},
+
+		{
+			"support ! for breaking change",
+			ccfg,
+			"feat!: add something", false,
+		},
+		{
+			"support ! with scope for breaking change",
+			ccfg,
+			"feat(scope)!: add something", false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -181,9 +213,21 @@ func TestMessageProcessorImpl_ValidateType(t *testing.T) {
 		ctype   string
 		wantErr bool
 	}{
-		{"valid type", ccfg, "feat", false},
-		{"invalid type", ccfg, "aaa", true},
-		{"empty type", ccfg, "", true},
+		{
+			"valid type",
+			ccfg,
+			"feat", false,
+		},
+		{
+			"invalid type",
+			ccfg,
+			"aaa", true,
+		},
+		{
+			"empty type",
+			ccfg,
+			"", true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -202,7 +246,11 @@ func TestMessageProcessorImpl_ValidateScope(t *testing.T) {
 		scope   string
 		wantErr bool
 	}{
-		{"any scope", ccfg, "aaa", false},
+		{
+			"any scope",
+			ccfg,
+			"aaa", false,
+		},
 		{"valid scope with scope list", ccfgWithScope, "scope", false},
 		{"invalid scope with scope list", ccfgWithScope, "aaa", true},
 	}
@@ -223,11 +271,31 @@ func TestMessageProcessorImpl_ValidateDescription(t *testing.T) {
 		description string
 		wantErr     bool
 	}{
-		{"empty description", ccfg, "", true},
-		{"sigle letter description", ccfg, "a", false},
-		{"number description", ccfg, "1", true},
-		{"valid description", ccfg, "add some feature", false},
-		{"invalid capital letter description", ccfg, "Add some feature", true},
+		{
+			"empty description",
+			ccfg,
+			"", true,
+		},
+		{
+			"sigle letter description",
+			ccfg,
+			"a", false,
+		},
+		{
+			"number description",
+			ccfg,
+			"1", true,
+		},
+		{
+			"valid description",
+			ccfg,
+			"add some feature", false,
+		},
+		{
+			"invalid capital letter description",
+			ccfg,
+			"Add some feature", true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -248,24 +316,73 @@ func TestMessageProcessorImpl_Enhance(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"issue on branch name", ccfg, "JIRA-123", "fix: fix something", "\njira: JIRA-123", false},
-		{"issue on branch name with description", ccfg, "JIRA-123-some-description", "fix: fix something", "\njira: JIRA-123", false},
-		{"issue on branch name with prefix", ccfg, "feature/JIRA-123", "fix: fix something", "\njira: JIRA-123", false},
-		{"with footer", ccfg, "JIRA-123", fullMessage, "jira: JIRA-123", false},
-		{"with issue on footer", ccfg, "JIRA-123", fullMessageWithJira, "", false},
-		{"issue on branch name with prefix and description", ccfg, "feature/JIRA-123-some-description", "fix: fix something", "\njira: JIRA-123", false},
-		{"no issue on branch name", ccfg, "branch", "fix: fix something", "", true},
-		{"unexpected branch name", ccfg, "feature /JIRA-123", "fix: fix something", "", true},
-		{"issue on branch name using hash", ccfgHash, "JIRA-123-some-description", "fix: fix something", "\njira #JIRA-123", false},
-		{"numeric issue on branch name", ccfgGitIssue, "#13", "fix: fix something", "\nissue: #13", false},
-		{"numeric issue on branch name without hash", ccfgGitIssue, "13", "fix: fix something", "\nissue: #13", false},
-		{"numeric issue on branch name with description without hash", ccfgGitIssue, "13-some-fix", "fix: fix something", "\nissue: #13", false},
+		{
+			"issue on branch name",
+			ccfg,
+			"JIRA-123", "fix: fix something", "\njira: JIRA-123", false,
+		},
+		{
+			"issue on branch name with description",
+			ccfg,
+			"JIRA-123-some-description", "fix: fix something", "\njira: JIRA-123", false,
+		},
+		{
+			"issue on branch name with prefix",
+			ccfg,
+			"feature/JIRA-123", "fix: fix something", "\njira: JIRA-123", false,
+		},
+		{
+			"with footer",
+			ccfg,
+			"JIRA-123", fullMessage, "jira: JIRA-123", false,
+		},
+		{
+			"with issue on footer",
+			ccfg,
+			"JIRA-123", fullMessageWithJira, "", false,
+		},
+		{
+			"issue on branch name with prefix and description",
+			ccfg,
+			"feature/JIRA-123-some-description", "fix: fix something", "\njira: JIRA-123", false,
+		},
+		{
+			"no issue on branch name",
+			ccfg,
+			"branch", "fix: fix something", "", true,
+		},
+		{
+			"unexpected branch name",
+			ccfg,
+			"feature /JIRA-123", "fix: fix something", "", true,
+		},
+		{
+			"issue on branch name using hash",
+			ccfgHash,
+			"JIRA-123-some-description", "fix: fix something", "\njira #JIRA-123", false,
+		},
+		{
+			"numeric issue on branch name",
+			ccfgGitIssue,
+			"#13", "fix: fix something", "\nissue: #13", false,
+		},
+		{
+			"numeric issue on branch name without hash",
+			ccfgGitIssue,
+			"13", "fix: fix something", "\nissue: #13", false,
+		},
+		{
+			"numeric issue on branch name with description without hash",
+			ccfgGitIssue,
+			"13-some-fix", "fix: fix something", "\nissue: #13", false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Enhance(tt.branch, tt.message)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MessageProcessorImpl.Enhance() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if got != tt.want {
@@ -296,6 +413,7 @@ func TestMessageProcessorImpl_IssueID(t *testing.T) {
 			got, err := p.IssueID(tt.branch)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MessageProcessorImpl.IssueID() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if got != tt.want {
@@ -326,19 +444,19 @@ func Test_hasIssueID(t *testing.T) {
 	}{
 		{"single line without issue", "feat: something", cfgColon, false},
 		{"multi line without issue", `feat: something
-		
+
 yay`, cfgColon, false},
 		{"multi line without jira issue", `feat: something
-		
+
 jira1: JIRA-123`, cfgColon, false},
 		{"multi line with issue", `feat: something
-		
+
 jira: JIRA-123`, cfgColon, true},
 		{"multi line with issue and hash", `feat: something
-		
+
 jira #JIRA-123`, cfgHash, true},
 		{"empty config", `feat: something
-		
+
 jira #JIRA-123`, cfgEmpty, false},
 	}
 	for _, tt := range tests {
@@ -378,8 +496,10 @@ var completeBody = `some descriptions
 jira: JIRA-123
 BREAKING CHANGE: this change breaks everything`
 
-var bodyWithCarriage = "some description\r\nmore description\r\n\r\njira: JIRA-123\r"
-var expectedBodyWithCarriage = "some description\nmore description\n\njira: JIRA-123"
+var (
+	bodyWithCarriage         = "some description\r\nmore description\r\n\r\njira: JIRA-123\r"
+	expectedBodyWithCarriage = "some description\nmore description\n\njira: JIRA-123"
+)
 
 var issueOnlyBody = `some descriptions
 
@@ -402,20 +522,145 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 		body    string
 		want    CommitMessage
 	}{
-		{"simple message", ccfg, "feat: something awesome", "", CommitMessage{Type: "feat", Scope: "", Description: "something awesome", Body: "", IsBreakingChange: false, Metadata: map[string]string{}}},
-		{"message with scope", ccfg, "feat(scope): something awesome", "", CommitMessage{Type: "feat", Scope: "scope", Description: "something awesome", Body: "", IsBreakingChange: false, Metadata: map[string]string{}}},
-		{"unmapped type", ccfg, "unkn: something unknown", "", CommitMessage{Type: "unkn", Scope: "", Description: "something unknown", Body: "", IsBreakingChange: false, Metadata: map[string]string{}}},
-		{"jira and breaking change metadata", ccfg, "feat: something new", completeBody, CommitMessage{Type: "feat", Scope: "", Description: "something new", Body: completeBody, IsBreakingChange: true, Metadata: map[string]string{issueMetadataKey: "JIRA-123", breakingChangeMetadataKey: "this change breaks everything"}}},
-		{"jira only metadata", ccfg, "feat: something new", issueOnlyBody, CommitMessage{Type: "feat", Scope: "", Description: "something new", Body: issueOnlyBody, IsBreakingChange: false, Metadata: map[string]string{issueMetadataKey: "JIRA-456"}}},
-		{"jira synonyms metadata", ccfg, "feat: something new", issueSynonymsBody, CommitMessage{Type: "feat", Scope: "", Description: "something new", Body: issueSynonymsBody, IsBreakingChange: false, Metadata: map[string]string{issueMetadataKey: "JIRA-789"}}},
-		{"breaking change with exclamation mark", ccfg, "feat!: something new", "", CommitMessage{Type: "feat", Scope: "", Description: "something new", Body: "", IsBreakingChange: true, Metadata: map[string]string{}}},
-		{"hash metadata", ccfg, "feat: something new", hashMetadataBody, CommitMessage{Type: "feat", Scope: "", Description: "something new", Body: hashMetadataBody, IsBreakingChange: false, Metadata: map[string]string{issueMetadataKey: "JIRA-999", "refs": "#123"}}},
-		{"empty issue cfg", ccfgEmptyIssue, "feat: something new", hashMetadataBody, CommitMessage{Type: "feat", Scope: "", Description: "something new", Body: hashMetadataBody, IsBreakingChange: false, Metadata: map[string]string{}}},
-		{"carriage return on body", ccfg, "feat: something new", bodyWithCarriage, CommitMessage{Type: "feat", Scope: "", Description: "something new", Body: expectedBodyWithCarriage, IsBreakingChange: false, Metadata: map[string]string{issueMetadataKey: "JIRA-123"}}},
+		{
+			"simple message",
+			ccfg,
+			"feat: something awesome", "",
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "",
+				Description:      "something awesome",
+				Body:             "",
+				IsBreakingChange: false,
+				Metadata:         map[string]string{},
+			},
+		},
+		{
+			"message with scope",
+			ccfg,
+			"feat(scope): something awesome", "",
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "scope",
+				Description:      "something awesome",
+				Body:             "",
+				IsBreakingChange: false,
+				Metadata:         map[string]string{},
+			},
+		},
+		{
+			"unmapped type",
+			ccfg,
+			"unkn: something unknown", "",
+			CommitMessage{
+				Type:             "unkn",
+				Scope:            "",
+				Description:      "something unknown",
+				Body:             "",
+				IsBreakingChange: false,
+				Metadata:         map[string]string{},
+			},
+		},
+		{
+			"jira and breaking change metadata",
+			ccfg,
+			"feat: something new", completeBody,
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "",
+				Description:      "something new",
+				Body:             completeBody,
+				IsBreakingChange: true,
+				Metadata: map[string]string{
+					issueMetadataKey:          "JIRA-123",
+					breakingChangeMetadataKey: "this change breaks everything",
+				},
+			},
+		},
+		{
+			"jira only metadata",
+			ccfg,
+			"feat: something new", issueOnlyBody,
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "",
+				Description:      "something new",
+				Body:             issueOnlyBody,
+				IsBreakingChange: false,
+				Metadata:         map[string]string{issueMetadataKey: "JIRA-456"},
+			},
+		},
+		{
+			"jira synonyms metadata",
+			ccfg,
+			"feat: something new", issueSynonymsBody,
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "",
+				Description:      "something new",
+				Body:             issueSynonymsBody,
+				IsBreakingChange: false,
+				Metadata:         map[string]string{issueMetadataKey: "JIRA-789"},
+			},
+		},
+		{
+			"breaking change with exclamation mark",
+			ccfg,
+			"feat!: something new", "",
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "",
+				Description:      "something new",
+				Body:             "",
+				IsBreakingChange: true,
+				Metadata:         map[string]string{},
+			},
+		},
+		{
+			"hash metadata",
+			ccfg,
+			"feat: something new", hashMetadataBody,
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "",
+				Description:      "something new",
+				Body:             hashMetadataBody,
+				IsBreakingChange: false,
+				Metadata:         map[string]string{issueMetadataKey: "JIRA-999", "refs": "#123"},
+			},
+		},
+		{
+			"empty issue cfg",
+			ccfgEmptyIssue,
+			"feat: something new", hashMetadataBody,
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "",
+				Description:      "something new",
+				Body:             hashMetadataBody,
+				IsBreakingChange: false,
+				Metadata:         map[string]string{},
+			},
+		},
+		{
+			"carriage return on body",
+			ccfg,
+			"feat: something new", bodyWithCarriage,
+			CommitMessage{
+				Type:             "feat",
+				Scope:            "",
+				Description:      "something new",
+				Body:             expectedBodyWithCarriage,
+				IsBreakingChange: false,
+				Metadata:         map[string]string{issueMetadataKey: "JIRA-123"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, err := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Parse(tt.subject, tt.body); !reflect.DeepEqual(got, tt.want) && err == nil {
+			if got, err := NewMessageProcessor(
+				tt.cfg, newBranchCfg(false),
+			).Parse(tt.subject, tt.body); !reflect.DeepEqual(got, tt.want) && err == nil {
 				t.Errorf("MessageProcessorImpl.Parse() = [%+v], want [%+v]", got, tt.want)
 			}
 		})
@@ -431,18 +676,102 @@ func TestMessageProcessorImpl_Format(t *testing.T) {
 		wantBody   string
 		wantFooter string
 	}{
-		{"simple message", ccfg, NewCommitMessage("feat", "", "something", "", "", ""), "feat: something", "", ""},
-		{"with issue", ccfg, NewCommitMessage("feat", "", "something", "", "JIRA-123", ""), "feat: something", "", "jira: JIRA-123"},
-		{"with issue using hash", ccfgHash, NewCommitMessage("feat", "", "something", "", "JIRA-123", ""), "feat: something", "", "jira #JIRA-123"},
-		{"with issue using double hash", ccfgHash, NewCommitMessage("feat", "", "something", "", "#JIRA-123", ""), "feat: something", "", "jira #JIRA-123"},
-		{"with breaking change", ccfg, NewCommitMessage("feat", "", "something", "", "", "breaks"), "feat: something", "", "BREAKING CHANGE: breaks"},
-		{"with scope", ccfg, NewCommitMessage("feat", "scope", "something", "", "", ""), "feat(scope): something", "", ""},
-		{"with body", ccfg, NewCommitMessage("feat", "", "something", "body", "", ""), "feat: something", "body", ""},
-		{"with multiline body", ccfg, NewCommitMessage("feat", "", "something", multilineBody, "", ""), "feat: something", multilineBody, ""},
-		{"full message", ccfg, NewCommitMessage("feat", "scope", "something", multilineBody, "JIRA-123", "breaks"), "feat(scope): something", multilineBody, fullFooter},
-		{"config without issue key", ccfgEmptyIssue, NewCommitMessage("feat", "", "something", "", "JIRA-123", ""), "feat: something", "", ""},
-		{"with issue and issue prefix", ccfgGitIssue, NewCommitMessage("feat", "", "something", "", "123", ""), "feat: something", "", "issue: #123"},
-		{"with #issue and issue prefix", ccfgGitIssue, NewCommitMessage("feat", "", "something", "", "#123", ""), "feat: something", "", "issue: #123"},
+		{
+			"simple message",
+			ccfg,
+			NewCommitMessage("feat", "", "something", "", "", ""),
+			"feat: something",
+			"",
+			"",
+		},
+		{
+			"with issue",
+			ccfg,
+			NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
+			"feat: something",
+			"",
+			"jira: JIRA-123",
+		},
+		{
+			"with issue using hash",
+			ccfgHash,
+			NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
+			"feat: something",
+			"",
+			"jira #JIRA-123",
+		},
+		{
+			"with issue using double hash",
+			ccfgHash,
+			NewCommitMessage("feat", "", "something", "", "#JIRA-123", ""),
+			"feat: something",
+			"",
+			"jira #JIRA-123",
+		},
+		{
+			"with breaking change",
+			ccfg,
+			NewCommitMessage("feat", "", "something", "", "", "breaks"),
+			"feat: something",
+			"",
+			"BREAKING CHANGE: breaks",
+		},
+		{
+			"with scope",
+			ccfg,
+			NewCommitMessage("feat", "scope", "something", "", "", ""),
+			"feat(scope): something",
+			"",
+			"",
+		},
+		{
+			"with body",
+			ccfg,
+			NewCommitMessage("feat", "", "something", "body", "", ""),
+			"feat: something",
+			"body",
+			"",
+		},
+		{
+			"with multiline body",
+			ccfg,
+			NewCommitMessage("feat", "", "something", multilineBody, "", ""),
+			"feat: something",
+			multilineBody,
+			"",
+		},
+		{
+			"full message",
+			ccfg,
+			NewCommitMessage("feat", "scope", "something", multilineBody, "JIRA-123", "breaks"),
+			"feat(scope): something",
+			multilineBody,
+			fullFooter,
+		},
+		{
+			"config without issue key",
+			ccfgEmptyIssue,
+			NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
+			"feat: something",
+			"",
+			"",
+		},
+		{
+			"with issue and issue prefix",
+			ccfgGitIssue,
+			NewCommitMessage("feat", "", "something", "", "123", ""),
+			"feat: something",
+			"",
+			"issue: #123",
+		},
+		{
+			"with #issue and issue prefix",
+			ccfgGitIssue,
+			NewCommitMessage("feat", "", "something", "", "#123", ""),
+			"feat: something",
+			"",
+			"issue: #123",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -532,14 +861,61 @@ func Test_prepareHeader(t *testing.T) {
 		wantHeader     string
 		wantError      bool
 	}{
-		{"conventional without selector", "", "feat: something", "feat: something", false},
-		{"conventional with scope without selector", "", "feat(scope): something", "feat(scope): something", false},
-		{"non-conventional without selector", "", "something", "something", false},
-		{"matching conventional with selector with group", "Merged PR (\\d+): (?P<header>.*)", "Merged PR 123: feat: something", "feat: something", false},
-		{"matching non-conventional with selector with group", "Merged PR (\\d+): (?P<header>.*)", "Merged PR 123: something", "something", false},
-		{"matching non-conventional with selector without group", "Merged PR (\\d+): (.*)", "Merged PR 123: something", "", true},
-		{"non-matching non-conventional with selector with group", "Merged PR (\\d+): (?P<header>.*)", "something", "", true},
-		{"matching non-conventional with invalid regex", "Merged PR (\\d+): (?<header>.*)", "Merged PR 123: something", "", true},
+		{
+			"conventional without selector",
+			"",
+			"feat: something",
+			"feat: something",
+			false,
+		},
+		{
+			"conventional with scope without selector",
+			"",
+			"feat(scope): something",
+			"feat(scope): something",
+			false,
+		},
+		{
+			"non-conventional without selector",
+			"",
+			"something", "something",
+			false,
+		},
+		{
+			"matching conventional with selector with group",
+			"Merged PR (\\d+): (?P<header>.*)",
+			"Merged PR 123: feat: something",
+			"feat: something",
+			false,
+		},
+		{
+			"matching non-conventional with selector with group",
+			"Merged PR (\\d+): (?P<header>.*)",
+			"Merged PR 123: something",
+			"something",
+			false,
+		},
+		{
+			"matching non-conventional with selector without group",
+			"Merged PR (\\d+): (.*)",
+			"Merged PR 123: something",
+			"",
+			true,
+		},
+		{
+			"non-matching non-conventional with selector with group",
+			"Merged PR (\\d+): (?P<header>.*)",
+			"something",
+			"",
+			true,
+		},
+		{
+			"matching non-conventional with invalid regex",
+			"Merged PR (\\d+): (?<header>.*)",
+			"Merged PR 123: something",
+			"",
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

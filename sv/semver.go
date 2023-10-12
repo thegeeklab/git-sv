@@ -14,6 +14,7 @@ const (
 // IsValidVersion return true when a version is valid.
 func IsValidVersion(value string) bool {
 	_, err := semver.NewVersion(value)
+
 	return err == nil
 }
 
@@ -23,6 +24,7 @@ func ToVersion(value string) (*semver.Version, error) {
 	if version == "" {
 		version = "0.0.0"
 	}
+
 	return semver.NewVersion(version)
 }
 
@@ -52,7 +54,9 @@ func NewSemVerCommitsProcessor(vcfg VersioningConfig, mcfg CommitMessageConfig) 
 }
 
 // NextVersion calculates next version based on commit log.
-func (p SemVerCommitsProcessorImpl) NextVersion(version *semver.Version, commits []GitCommitLog) (*semver.Version, bool) {
+func (p SemVerCommitsProcessorImpl) NextVersion(
+	version *semver.Version, commits []GitCommitLog,
+) (*semver.Version, bool) {
 	versionToUpdate := none
 	for _, commit := range commits {
 		if v := p.versionTypeToUpdate(commit); v > versionToUpdate {
@@ -64,7 +68,9 @@ func (p SemVerCommitsProcessorImpl) NextVersion(version *semver.Version, commits
 	if version == nil {
 		return nil, updated
 	}
+
 	newVersion := updateVersion(*version, versionToUpdate)
+
 	return &newVersion, updated
 }
 
@@ -85,18 +91,23 @@ func (p SemVerCommitsProcessorImpl) versionTypeToUpdate(commit GitCommitLog) ver
 	if commit.Message.IsBreakingChange {
 		return major
 	}
+
 	if _, exists := p.MajorVersionTypes[commit.Message.Type]; exists {
 		return major
 	}
+
 	if _, exists := p.MinorVersionTypes[commit.Message.Type]; exists {
 		return minor
 	}
+
 	if _, exists := p.PatchVersionTypes[commit.Message.Type]; exists {
 		return patch
 	}
+
 	if !contains(commit.Message.Type, p.KnownTypes) && p.IncludeUnknownTypeAsPatch {
 		return patch
 	}
+
 	return none
 }
 
@@ -105,5 +116,6 @@ func toMap(values []string) map[string]struct{} {
 	for _, v := range values {
 		result[v] = struct{}{}
 	}
+
 	return result
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -14,22 +15,62 @@ type commitType struct {
 	Example     string
 }
 
+var errInvalidValue = errors.New("invalid value")
+
 func promptType(types []string) (commitType, error) {
 	defaultTypes := map[string]commitType{
-		"build":    {Type: "build", Description: "changes that affect the build system or external dependencies", Example: "gradle, maven, go mod, npm"},
-		"ci":       {Type: "ci", Description: "changes to our CI configuration files and scripts", Example: "Circle, BrowserStack, SauceLabs"},
-		"chore":    {Type: "chore", Description: "update something without impacting the user", Example: "gitignore"},
-		"docs":     {Type: "docs", Description: "documentation only changes"},
-		"feat":     {Type: "feat", Description: "a new feature"},
-		"fix":      {Type: "fix", Description: "a bug fix"},
-		"perf":     {Type: "perf", Description: "a code change that improves performance"},
-		"refactor": {Type: "refactor", Description: "a code change that neither fixes a bug nor adds a feature"},
-		"style":    {Type: "style", Description: "changes that do not affect the meaning of the code", Example: "white-space, formatting, missing semi-colons, etc"},
-		"test":     {Type: "test", Description: "adding missing tests or correcting existing tests"},
-		"revert":   {Type: "revert", Description: "revert a single commit"},
+		"build": {
+			Type:        "build",
+			Description: "changes that affect the build system or external dependencies",
+			Example:     "gradle, maven, go mod, npm",
+		},
+		"ci": {
+			Type:        "ci",
+			Description: "changes to our CI configuration files and scripts",
+			Example:     "Circle, BrowserStack, SauceLabs",
+		},
+		"chore": {
+			Type:        "chore",
+			Description: "update something without impacting the user",
+			Example:     "gitignore",
+		},
+		"docs": {
+			Type:        "docs",
+			Description: "documentation only changes",
+		},
+		"feat": {
+			Type:        "feat",
+			Description: "a new feature",
+		},
+		"fix": {
+			Type:        "fix",
+			Description: "a bug fix",
+		},
+		"perf": {
+			Type:        "perf",
+			Description: "a code change that improves performance",
+		},
+		"refactor": {
+			Type:        "refactor",
+			Description: "a code change that neither fixes a bug nor adds a feature",
+		},
+		"style": {
+			Type:        "style",
+			Description: "changes that do not affect the meaning of the code",
+			Example:     "white-space, formatting, missing semi-colons, etc",
+		},
+		"test": {
+			Type:        "test",
+			Description: "adding missing tests or correcting existing tests",
+		},
+		"revert": {
+			Type:        "revert",
+			Description: "revert a single commit",
+		},
 	}
 
 	var items []commitType
+
 	for _, t := range types {
 		if v, exists := defaultTypes[t]; exists {
 			items = append(items, v)
@@ -53,6 +94,7 @@ func promptType(types []string) (commitType, error) {
 	if err != nil {
 		return commitType{}, err
 	}
+
 	return items[i], nil
 }
 
@@ -62,8 +104,10 @@ func promptScope(values []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		return values[selected], nil
 	}
+
 	return promptText("scope", "^[a-z0-9-]*$", "")
 }
 
@@ -85,7 +129,7 @@ func promptBreakingChanges() (string, error) {
 
 func promptSelect(label string, items interface{}, template *promptui.SelectTemplates) (int, error) {
 	if items == nil || reflect.TypeOf(items).Kind() != reflect.Slice {
-		return 0, fmt.Errorf("items %v is not a slice", items)
+		return 0, fmt.Errorf("%w: %v is not a slice", errInvalidValue, items)
 	}
 
 	prompt := promptui.Select{
@@ -96,6 +140,7 @@ func promptSelect(label string, items interface{}, template *promptui.SelectTemp
 	}
 
 	index, _, err := prompt.Run()
+
 	return index, err
 }
 
@@ -103,8 +148,9 @@ func promptText(label, regex, defaultValue string) (string, error) {
 	validate := func(input string) error {
 		regex := regexp.MustCompile(regex)
 		if !regex.MatchString(input) {
-			return fmt.Errorf("invalid value, expected: %s", regex)
+			return fmt.Errorf("%w, expected: %s", errInvalidValue, regex)
 		}
+
 		return nil
 	}
 
@@ -122,5 +168,6 @@ func promptConfirm(label string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return r == "y", nil
 }

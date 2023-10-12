@@ -39,6 +39,7 @@ func NewOutputFormatter(templatesFS fs.FS) *OutputFormatterImpl {
 		"getenv":     os.Getenv,
 	}
 	tpls := template.Must(template.New("templates").Funcs(templateFNs).ParseFS(templatesFS, "*"))
+
 	return &OutputFormatterImpl{templates: tpls}
 }
 
@@ -48,6 +49,7 @@ func (p OutputFormatterImpl) FormatReleaseNote(releasenote ReleaseNote) (string,
 	if err := p.templates.ExecuteTemplate(&b, "releasenotes-md.tpl", releaseNoteVariables(releasenote)); err != nil {
 		return "", err
 	}
+
 	return b.String(), nil
 }
 
@@ -62,6 +64,7 @@ func (p OutputFormatterImpl) FormatChangelog(releasenotes []ReleaseNote) (string
 	if err := p.templates.ExecuteTemplate(&b, "changelog-md.tpl", templateVars); err != nil {
 		return "", err
 	}
+
 	return b.String(), nil
 }
 
@@ -70,6 +73,7 @@ func releaseNoteVariables(releasenote ReleaseNote) releaseNoteTemplateVariables 
 	if releasenote.Version != nil {
 		release = "v" + releasenote.Version.String()
 	}
+
 	return releaseNoteTemplateVariables{
 		Release:     release,
 		Tag:         releasenote.Tag,
@@ -83,10 +87,13 @@ func releaseNoteVariables(releasenote ReleaseNote) releaseNoteTemplateVariables 
 func toSortedArray(input map[string]struct{}) []string {
 	result := make([]string, len(input))
 	i := 0
+
 	for k := range input {
 		result[i] = k
 		i++
 	}
+
 	sort.Strings(result)
+
 	return result
 }

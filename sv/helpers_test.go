@@ -8,6 +8,7 @@ import (
 
 func version(v string) *semver.Version {
 	r, _ := semver.NewVersion(v)
+
 	return r
 }
 
@@ -16,6 +17,7 @@ func commitlog(ctype string, metadata map[string]string, author string) GitCommi
 	if _, found := metadata[breakingChangeMetadataKey]; found {
 		breaking = true
 	}
+
 	return GitCommitLog{
 		Message: CommitMessage{
 			Type:             ctype,
@@ -27,7 +29,13 @@ func commitlog(ctype string, metadata map[string]string, author string) GitCommi
 	}
 }
 
-func releaseNote(version *semver.Version, tag string, date time.Time, sections []ReleaseNoteSection, authorsNames map[string]struct{}) ReleaseNote {
+func releaseNote(
+	version *semver.Version,
+	tag string,
+	date time.Time,
+	sections []ReleaseNoteSection,
+	authorsNames map[string]struct{},
+) ReleaseNote {
 	return ReleaseNote{
 		Version:      version,
 		Tag:          tag,

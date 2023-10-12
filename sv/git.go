@@ -3,7 +3,6 @@ package sv
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -83,17 +82,35 @@ func NewGit(messageProcessor MessageProcessor, cfg TagConfig) *GitImpl {
 
 // LastTag get last tag, if no tag found, return empty.
 func (g GitImpl) LastTag() string {
-	cmd := exec.Command("git", "for-each-ref", "refs/tags/"+*g.tagCfg.Filter, "--sort", "-creatordate", "--format", "%(refname:short)", "--count", "1")
+	//nolint:gosec
+	cmd := exec.Command(
+		"git",
+		"for-each-ref",
+		fmt.Sprintf("refs/tags/%s", *g.tagCfg.Filter),
+		"--sort",
+		"-creatordate",
+		"--format",
+		"%(refname:short)",
+		"--count",
+		"1",
+	)
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return ""
 	}
+
 	return strings.TrimSpace(strings.Trim(string(out), "\n"))
 }
 
 // Log return git log.
 func (g GitImpl) Log(lr LogRange) ([]GitCommitLog, error) {
-	format := "--pretty=format:\"%ad" + logSeparator + "%at" + logSeparator + "%cN" + logSeparator + "%h" + logSeparator + "%s" + logSeparator + "%b" + endLine + "\""
+	format := "--pretty=format:\"%ad" + logSeparator +
+		"%at" + logSeparator +
+		"%cN" + logSeparator +
+		"%h" + logSeparator +
+		"%s" + logSeparator +
+		"%b" + endLine + "\""
 	params := []string{"log", "--date=short", format}
 
 	if lr.start != "" || lr.end != "" {
@@ -110,14 +127,17 @@ func (g GitImpl) Log(lr LogRange) ([]GitCommitLog, error) {
 	}
 
 	cmd := exec.Command("git", params...)
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, combinedOutputErr(err, out)
 	}
+
 	logs, parseErr := parseLogOutput(g.messageProcessor, string(out))
 	if parseErr != nil {
 		return nil, parseErr
 	}
+
 	return logs, nil
 }
 
@@ -126,6 +146,7 @@ func (g GitImpl) Commit(header, body, footer string) error {
 	cmd := exec.Command("git", "commit", "-m", header, "-m", "", "-m", body, "-m", "", "-m", footer)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	return cmd.Run()
 }
 
@@ -143,45 +164,66 @@ func (g GitImpl) Tag(version semver.Version) (string, error) {
 	if out, err := pushCommand.CombinedOutput(); err != nil {
 		return tag, combinedOutputErr(err, out)
 	}
+
 	return tag, nil
 }
 
 // Tags list repository tags.
 func (g GitImpl) Tags() ([]GitTag, error) {
-	cmd := exec.Command("git", "for-each-ref", "--sort", "creatordate", "--format", "%(creatordate:iso8601)#%(refname:short)", "refs/tags/"+*g.tagCfg.Filter)
+	//nolint:gosec
+	cmd := exec.Command(
+		"git",
+		"for-each-ref",
+		"--sort",
+		"creatordate",
+		"--format",
+		"%(creatordate:iso8601)#%(refname:short)",
+		fmt.Sprintf("refs/tags/%s", *g.tagCfg.Filter),
+	)
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, combinedOutputErr(err, out)
 	}
+
 	return parseTagsOutput(string(out))
 }
 
 // Branch get git branch.
 func (GitImpl) Branch() string {
 	cmd := exec.Command("git", "symbolic-ref", "--short", "HEAD")
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return ""
 	}
+
 	return strings.TrimSpace(strings.Trim(string(out), "\n"))
 }
 
 // IsDetached check if is detached.
 func (GitImpl) IsDetached() (bool, error) {
 	cmd := exec.Command("git", "symbolic-ref", "-q", "HEAD")
+
 	out, err := cmd.CombinedOutput()
-	if output := string(out); err != nil { //-q: do not issue an error message if the <name> is not a symbolic ref, but a detached HEAD; instead exit with non-zero status silently.
+	// -q: do not issue an error message if the <name> is not a symbolic ref, but a detached HEAD;
+	// instead exit with non-zero status silently.
+	if output := string(out); err != nil {
 		if output == "" {
 			return true, nil
 		}
-		return false, errors.New(output)
+
+		return false, fmt.Errorf("%w: %s", errUnknownGitError, output)
 	}
+
 	return false, nil
 }
 
 func parseTagsOutput(input string) ([]GitTag, error) {
 	scanner := bufio.NewScanner(strings.NewReader(input))
+
 	var result []GitTag
+
 	for scanner.Scan() {
 		if line := strings.TrimSpace(scanner.Text()); line != "" {
 			values := strings.Split(line, "#")
@@ -189,31 +231,35 @@ func parseTagsOutput(input string) ([]GitTag, error) {
 			result = append(result, GitTag{Name: values[1], Date: date})
 		}
 	}
+
 	return result, nil
 }
 
 func parseLogOutput(messageProcessor MessageProcessor, log string) ([]GitCommitLog, error) {
 	scanner := bufio.NewScanner(strings.NewReader(log))
 	scanner.Split(splitAt([]byte(endLine)))
+
 	var logs []GitCommitLog
+
 	for scanner.Scan() {
 		if text := strings.TrimSpace(strings.Trim(scanner.Text(), "\"")); text != "" {
 			log, err := parseCommitLog(messageProcessor, text)
 			if err != nil {
 				return nil, err
 			}
+
 			logs = append(logs, log)
 		}
 	}
+
 	return logs, nil
 }
 
 func parseCommitLog(messageProcessor MessageProcessor, commit string) (GitCommitLog, error) {
 	content := strings.Split(strings.Trim(commit, "\""), logSeparator)
-
 	timestamp, _ := strconv.Atoi(content[1])
-	message, err := messageProcessor.Parse(content[4], content[5])
 
+	message, err := messageProcessor.Parse(content[4], content[5])
 	if err != nil {
 		return GitCommitLog{}, err
 	}
@@ -228,10 +274,8 @@ func parseCommitLog(messageProcessor MessageProcessor, commit string) (GitCommit
 }
 
 func splitAt(b []byte) func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		dataLen := len(data)
-
-		if atEOF && dataLen == 0 {
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) { //nolint:nonamedreturns
+		if atEOF && len(data) == 0 {
 			return 0, nil, nil
 		}
 
@@ -240,7 +284,7 @@ func splitAt(b []byte) func(data []byte, atEOF bool) (advance int, token []byte,
 		}
 
 		if atEOF {
-			return dataLen, data, nil
+			return len(data), data, nil
 		}
 
 		return 0, nil, nil
@@ -264,10 +308,12 @@ func str(value, defaultValue string) string {
 	if value != "" {
 		return value
 	}
+
 	return defaultValue
 }
 
 func combinedOutputErr(err error, out []byte) error {
 	msg := strings.Split(string(out), "\n")
-	return fmt.Errorf("%v - %s", err, msg[0])
+
+	return fmt.Errorf("%w - %s", err, msg[0])
 }

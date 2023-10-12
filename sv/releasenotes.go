@@ -22,22 +22,32 @@ func NewReleaseNoteProcessor(cfg ReleaseNotesConfig) *ReleaseNoteProcessorImpl {
 }
 
 // Create create a release note based on commits.
-func (p ReleaseNoteProcessorImpl) Create(version *semver.Version, tag string, date time.Time, commits []GitCommitLog) ReleaseNote {
+func (p ReleaseNoteProcessorImpl) Create(
+	version *semver.Version,
+	tag string,
+	date time.Time,
+	commits []GitCommitLog,
+) ReleaseNote {
 	mapping := commitSectionMapping(p.cfg.Sections)
 
 	sections := make(map[string]ReleaseNoteCommitsSection)
 	authors := make(map[string]struct{})
+
 	var breakingChanges []string
+
 	for _, commit := range commits {
 		authors[commit.AuthorName] = struct{}{}
+
 		if sectionCfg, exists := mapping[commit.Message.Type]; exists {
 			section, sexists := sections[sectionCfg.Name]
 			if !sexists {
 				section = ReleaseNoteCommitsSection{Name: sectionCfg.Name, Types: sectionCfg.CommitTypes}
 			}
+
 			section.Items = append(section.Items, commit)
 			sections[sectionCfg.Name] = section
 		}
+
 		if commit.Message.BreakingMessage() != "" {
 			// TODO: if no message found, should use description instead?
 			breakingChanges = append(breakingChanges, commit.Message.BreakingMessage())
@@ -48,10 +58,20 @@ func (p ReleaseNoteProcessorImpl) Create(version *semver.Version, tag string, da
 	if bcCfg := p.cfg.sectionConfig(ReleaseNotesSectionTypeBreakingChanges); bcCfg != nil && len(breakingChanges) > 0 {
 		breakingChangeSection = ReleaseNoteBreakingChangeSection{Name: bcCfg.Name, Messages: breakingChanges}
 	}
-	return ReleaseNote{Version: version, Tag: tag, Date: date.Truncate(time.Minute), Sections: p.toReleaseNoteSections(sections, breakingChangeSection), AuthorsNames: authors}
+
+	return ReleaseNote{
+		Version:      version,
+		Tag:          tag,
+		Date:         date.Truncate(time.Minute),
+		Sections:     p.toReleaseNoteSections(sections, breakingChangeSection),
+		AuthorsNames: authors,
+	}
 }
 
-func (p ReleaseNoteProcessorImpl) toReleaseNoteSections(commitSections map[string]ReleaseNoteCommitsSection, breakingChange ReleaseNoteBreakingChangeSection) []ReleaseNoteSection {
+func (p ReleaseNoteProcessorImpl) toReleaseNoteSections(
+	commitSections map[string]ReleaseNoteCommitsSection,
+	breakingChange ReleaseNoteBreakingChangeSection,
+) []ReleaseNoteSection {
 	hasBreaking := 0
 	if breakingChange.Name != "" {
 		hasBreaking = 1
@@ -59,11 +79,13 @@ func (p ReleaseNoteProcessorImpl) toReleaseNoteSections(commitSections map[strin
 
 	sections := make([]ReleaseNoteSection, len(commitSections)+hasBreaking)
 	i := 0
+
 	for _, cfg := range p.cfg.Sections {
 		if cfg.SectionType == ReleaseNotesSectionTypeBreakingChanges && hasBreaking > 0 {
 			sections[i] = breakingChange
 			i++
 		}
+
 		if s, exists := commitSections[cfg.Name]; cfg.SectionType == ReleaseNotesSectionTypeCommits && exists {
 			sections[i] = s
 			i++
@@ -75,6 +97,7 @@ func (p ReleaseNoteProcessorImpl) toReleaseNoteSections(commitSections map[strin
 
 func commitSectionMapping(sections []ReleaseNotesSectionConfig) map[string]ReleaseNotesSectionConfig {
 	mapping := make(map[string]ReleaseNotesSectionConfig)
+
 	for _, section := range sections {
 		if section.SectionType == ReleaseNotesSectionTypeCommits {
 			for _, commitType := range section.CommitTypes {
@@ -82,6 +105,7 @@ func commitSectionMapping(sections []ReleaseNotesSectionConfig) map[string]Relea
 			}
 		}
 	}
+
 	return mapping
 }
 

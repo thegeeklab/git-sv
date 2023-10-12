@@ -14,9 +14,11 @@ func Test_checkTemplatesFiles(t *testing.T) {
 			got, err := defaultTemplatesFS.ReadFile(tt)
 			if err != nil {
 				t.Errorf("missing template error = %v", err)
+
 				return
 			}
-			if len(got) <= 0 {
+
+			if len(got) == 0 {
 				t.Errorf("empty template")
 			}
 		})
