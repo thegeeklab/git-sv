@@ -1,21 +1,26 @@
 # git-sv
 
-A command line tool (CLI) to validate commit messages, bump version, create tags and generate changelogs.
+Semantic versioning tool for git based on conventional commits.
+
+[![Build Status](https://ci.thegeeklab.de/api/badges/thegeeklab/git-sv/status.svg)](https://ci.thegeeklab.de/repos/thegeeklab/git-sv)
+[![Go Report Card](https://goreportcard.com/badge/github.com/thegeeklab/git-sv)](https://goreportcard.com/report/github.com/thegeeklab/git-sv)
+[![GitHub contributors](https://img.shields.io/github/contributors/thegeeklab/git-sv)](https://github.com/thegeeklab/git-sv/graphs/contributors)
+[![License: MIT](https://img.shields.io/github/license/thegeeklab/git-sv)](https://github.com/thegeeklab/git-sv/blob/main/LICENSE)
 
 ## Getting Started
 
-### Pre Requirements
+### Requirements
 
 - Git 2.17+
 
 ### Installing
 
 - Download the latest release and add the binary to your path.
-- Optional: Set `GITSV_HOME` to define user configs. Check the [Config](#config) topic for more information.
+- Optional: Set `GITSV_HOME` to define user configurations. Check the [Configuration](#configuration) topic for more information.
 
 If you want to install from source using `go install`, just run:
 
-```bash
+```Shell
 # keep in mind that with this, it will compile from source and won't show the version on cli -h.
 go install github.com/thegeeklab/git-sv/v2/cmd/git-sv@latest
 
@@ -23,15 +28,15 @@ go install github.com/thegeeklab/git-sv/v2/cmd/git-sv@latest
 GITSV_VERSION=$(go list -f '{{ .Version }}' -m github.com/thegeeklab/git-sv/v2@latest | sed 's/v//') && go install --ldflags "-X main.Version=$SGITSV_VERSION" github.com/thegeeklab/git-sv/v2/cmd/git-sv@v$GITSV_VERSION
 ```
 
-### Config
+### Configuration
 
 #### YAML
 
-There are 3 config levels when using git-sv: [default](#default), [user](#user), [repository](#repository). All of them are merged considering the follow priority: **repository > user > default**.
+There are 3 configuration levels when using git-sv: [default](#default), [user](#user), [repository](#repository). All of them are merged considering the follow priority: **repository > user > default**.
 
-To see the current config, run:
+To see the current configuration, run:
 
-```bash
+```Shell
 git sv cfg show
 ```
 
@@ -41,33 +46,33 @@ git sv cfg show
 
 To check the default configuration, run:
 
-```bash
+```Shell
 git sv cfg default
 ```
 
 ###### User
 
-For user config, it is necessary to define the `GITSV_HOME` environment variable, eg.:
+For user configuration, it is necessary to define the `GITSV_HOME` environment variable, e.g.:
 
-```bash
+```Shell
 GITSV_HOME=/home/myuser/.gitsv # myuser is just an example.
 ```
 
-And create a `config.yml` file inside it, eg.:
+And create a `config.yml` file inside it, e.g.:
 
-```bash
+```Shell
 .gitsv
 └── config.yml
 ```
 
 ###### Repository
 
-Create a `.gitsv/config.yml` file on the root of your repository, eg. [.gitsv/config.yml](.gitsv/config.yml).
+Create a `.gitsv/config.yml` file on the root of your repository, e.g. [.gitsv/config.yml](.gitsv/config.yml).
 
 ##### Configuration format
 
-```yml
-version: "1.1" #config version
+```Yaml
+version: "1.1" #configuration version
 
 versioning: # versioning bump
   update-major: [] # Commit types used to bump major.
@@ -141,7 +146,7 @@ commit-message:
 
 **git-sv** uses _go templates_ to format the output for `release-notes` and `changelog`, to see how the default template is configured check [template directory](cmd/git-sv/resources/templates). It's possible to overwrite the default configuration by adding `.gitsv/templates` on your repository. The cli expects that at least 2 files exists on your directory: `changelog-md.tpl` and `releasenotes-md.tpl`.
 
-```bash
+```Shell
 .gitsv
 └── templates
     ├── changelog-md.tpl
@@ -152,9 +157,9 @@ Everything inside `.gitsv/templates` will be loaded, so it's possible to add mor
 
 ##### Variables
 
-To execute the template the `releasenotes-md.tpl` will receive a single **ReleaseNote** and `changelog-md.tpl` will receive a list of **ReleaseNote** as variables.
+To execute the template the `releasenotes-md.tpl` will receive a single `ReleaseNote` and `changelog-md.tpl` will receive a list of `ReleaseNote` as variables.
 
-Each **ReleaseNoteSection** will be configured according with `release-notes.section` from config file. The order for each section will be maintained and the **SectionType** is defined according with `section-type` attribute as described on the table below.
+Each `ReleaseNoteSection` will be configured according with `release-notes.section` from configuration file. The order for each section will be maintained and the `SectionType` is defined according with `section-type` attribute as described on the table below.
 
 | section-type     | ReleaseNoteSection               |
 | ---------------- | -------------------------------- |
@@ -163,56 +168,9 @@ Each **ReleaseNoteSection** will be configured according with `release-notes.sec
 
 > :warning: currently only `commits` and `breaking-changes` are supported as `section-types`, using a different value for this field will make the section to be removed from the template variables.
 
-Check below the variables available:
-
-```go
-ReleaseNote
-  Release     string // 'v' followed by version if present, if not tag will be used instead.
-  Tag         string // Current tag, if available.
-  Version     *Version // Version from tag or next version according with semver.
-  Date        time.Time
-  Sections    []ReleaseNoteSection // ReleaseNoteCommitsSection or ReleaseNoteBreakingChangeSection
-  AuthorNames []string // Author names recovered from commit message (user.name from git)
-
-Version
-  Major      int
-  Minor      int
-  Patch      int
-  Prerelease string
-  Metadata   string
-  Original   string
-
-ReleaseNoteCommitsSection // SectionType == commits
-  SectionType      string
-  SectionName      string
-  Types            []string
-  Items            []GitCommitLog
-  HasMultipleTypes bool
-
-ReleaseNoteBreakingChangeSection // SectionType == breaking-changes
-  SectionType string
-  SectionName string
-  Messages    []string
-
-GitCommitLog
-  Date       string
-  Timestamp  int
-  AuthorName string
-  Hash       string
-  Message    CommitMessage
-
-CommitMessage
-  Type             string
-  Scope            string
-  Description      string
-  Body             string
-  IsBreakingChange bool
-  Metadata         map[string]string
-```
-
 ##### Functions
 
-Beside the [go template functions](https://pkg.go.dev/text/template#hdr-Functions), the folowing functions are availiable to use in the templates. Check [formatter_functions.go](sv/formatter_functions.go) to see the functions implementation.
+Beside the [go template functions](https://pkg.go.dev/text/template#hdr-Functions), the following functions are available to use in the templates. Check [formatter_functions.go](sv/formatter_functions.go) to see the functions implementation.
 
 ###### timefmt
 
@@ -230,7 +188,7 @@ Receive a list of ReleaseNoteSection and a Section name and returns a section wi
 
 Run `git-sv` to get the list of available parameters:
 
-```bash
+```Shell
 git-sv
 ```
 
@@ -238,7 +196,7 @@ git-sv
 
 If `git-sv` is configured on your path, you can use it like a git command:
 
-```bash
+```Shell
 git sv
 git sv current-version
 git sv next-version
@@ -248,29 +206,34 @@ git sv next-version
 
 Use `--help` or `-h` to get usage information, don't forget that some commands have unique options too:
 
-```bash
-# sv help
-git-sv -h
+```Shell
+$ git-sv --help
+NAME:
+   git-sv - Semantic version for git.
 
-# sv release-notes command help
-git-sv rn -h
+USAGE:
+   git-sv [global options] command [command options] [arguments...]
+
+VERSION:
+   20e64f8
+
+COMMANDS:
+   config, cfg                   cli configuration
+   current-version, cv           get last released version from git
+   next-version, nv              generate the next version based on git commit messages
+   commit-log, cl                list all commit logs according to range as jsons
+   commit-notes, cn              generate a commit notes according to range
+   release-notes, rn             generate release notes
+   changelog, cgl                generate changelog
+   tag, tg                       generate tag with version based on git commit messages
+   commit, cmt                   execute git commit with convetional commit message helper
+   validate-commit-message, vcm  use as prepare-commit-message hook to validate and enhance commit message
+   help, h                       Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
 ```
-
-##### Available commands
-
-| Variable                     | description                                                    | has options or subcommands |
-| ---------------------------- | -------------------------------------------------------------- | :------------------------: |
-| config, cfg                  | Show config information.                                       |     :heavy_check_mark:     |
-| current-version, cv          | Get last released version from git.                            |            :x:             |
-| next-version, nv             | Generate the next version based on git commit messages.        |            :x:             |
-| commit-log, cl               | List all commit logs according to range as jsons.              |     :heavy_check_mark:     |
-| commit-notes, cn             | Generate a commit notes according to range.                    |     :heavy_check_mark:     |
-| release-notes, rn            | Generate release notes.                                        |     :heavy_check_mark:     |
-| changelog, cgl               | Generate changelog.                                            |     :heavy_check_mark:     |
-| tag, tg                      | Generate tag with version based on git commit messages.        |            :x:             |
-| commit, cmt                  | Execute git commit with convetional commit message helper.     |     :heavy_check_mark:     |
-| validate-commit-message, vcm | Use as prepare-commit-message hook to validate commit message. |     :heavy_check_mark:     |
-| help, h                      | Shows a list of commands or help for one command.              |            :x:             |
 
 ##### Use range
 
@@ -278,13 +241,13 @@ Commands like `commit-log` and `commit-notes` has a range option. Supported rang
 
 By default, it's used [--date=short](https://git-scm.com/docs/git-log#Documentation/git-log.txt---dateltformatgt) at `git log`, all dates returned from it will be in `YYYY-MM-DD` format.
 
-Range `tag` will use `git for-each-ref refs/tags` to get the last tag available if `start` is empty, the others types won't use the existing tags. It's recommended to always use a start limit in a old repository with a lot of commits. This behavior was maintained to not break the retrocompatibility.
+Range `tag` will use `git for-each-ref refs/tags` to get the last tag available if `start` is empty, the others types won't use the existing tags. It's recommended to always use a start limit in an old repository with a lot of commits.
 
 Range `date` use git log `--since` and `--until`. It's possible to use all supported formats from [git log](https://git-scm.com/docs/git-log#Documentation/git-log.txt---sinceltdategt). If `end` is in `YYYY-MM-DD` format, `sv` will add a day on git log command to make the end date inclusive.
 
 Range `tag` and `hash` are used on git log [revision range](https://git-scm.com/docs/git-log#Documentation/git-log.txt-ltrevisionrangegt). If `end` is empty, `HEAD` will be used instead.
 
-```bash
+```Shell
 # get commit log as json using a inclusive range
 git-sv commit-log --range hash --start 7ea9306~1 --end c444318
 
@@ -292,80 +255,10 @@ git-sv commit-log --range hash --start 7ea9306~1 --end c444318
 git-sv commit-log --range tag
 ```
 
-##### Use validate-commit-message as prepare-commit-msg hook
+## Contributors
 
-Configure your `.git/hooks/prepare-commit-msg`:
+Special thanks to all [contributors](https://github.com/thegeeklab/git-sv/graphs/contributors). If you would like to contribute, please see the [instructions](https://github.com/thegeeklab/git-sv/blob/main/CONTRIBUTING.md).
 
-```bash
-#!/bin/sh
+## License
 
-COMMIT_MSG_FILE=$1
-COMMIT_SOURCE=$2
-SHA1=$3
-
-git sv vcm --path "$(pwd)" --file "$COMMIT_MSG_FILE" --source "$COMMIT_SOURCE"
-```
-
-**Tip**: you can configure a directory as your global git templates using the command below:
-
-```bash
-git config --global init.templatedir '<YOUR TEMPLATE DIR>'
-```
-
-Check [git config docs](https://git-scm.com/docs/git-config#Documentation/git-config.txt-inittemplateDir) for more information!
-
-## Development
-
-### Makefile
-
-Run `make` to get the list of available actions:
-
-```bash
-make
-```
-
-#### Make configs
-
-| Variable   | description             |
-| ---------- | ----------------------- |
-| BUILDOS    | Build OS.               |
-| BUILDARCH  | Build arch.             |
-| ECHOFLAGS  | Flags used on echo.     |
-| BUILDENVS  | Var envs used on build. |
-| BUILDFLAGS | Flags used on build.    |
-
-| Parameters | description                          |
-| ---------- | ------------------------------------ |
-| args       | Parameters that will be used on run. |
-
-```bash
-#variables
-BUILDOS="linux" BUILDARCH="amd64" make build
-
-#parameters
-make run args="-h"
-```
-
-### Build
-
-```bash
-make build
-```
-
-The binary will be created on `bin/$BUILDOS_$BUILDARCH/git-sv`.
-
-### Tests
-
-```bash
-make test
-```
-
-### Run
-
-```bash
-#without args
-make run
-
-#with args
-make run args="-h"
-```
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/thegeeklab/git-sv/blob/main/LICENSE) file for details.

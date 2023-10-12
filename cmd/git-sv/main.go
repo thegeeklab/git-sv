@@ -92,7 +92,7 @@ func main() {
 			{
 				Name:    "commit-log",
 				Aliases: []string{"cl"},
-				Usage:   "list all commit logs according to range as jsons",
+				Usage:   "list all commit logs according to range as json",
 				Description: `The range filter is used based on git log filters, check https://git-scm.com/docs/git-log
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
@@ -132,7 +132,7 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 			{
 				Name:    "commit",
 				Aliases: []string{"cmt"},
-				Usage:   "execute git commit with convetional commit message helper",
+				Usage:   "execute git commit with conventional commit message helper",
 				Action:  commitHandler(cfg, git, messageProcessor),
 				Flags:   commitFlags(),
 			},

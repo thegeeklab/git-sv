@@ -45,7 +45,7 @@ steps:
         target: DOCKER_USER
     environment:
       PUSHRM_FILE: README.md
-      PUSHRM_SHORT: Woodpecker CI plugin to perform git actions
+      PUSHRM_SHORT: Semantic versioning tool for git based on conventional commits
       PUSHRM_TARGET: ${CI_REPO}
     when:
       - event: [push, manual]

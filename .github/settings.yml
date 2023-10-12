@@ -1,8 +1,7 @@
 repository:
   name: git-sv
-  description: Woodpecker CI plugin to perform git actions
-  homepage: https://woodpecker-plugins.geekdocs.de/plugins/git-sv
-  topics: woodpecker-ci, woodpecker, woodpecker-plugin
+  description: Semantic versioning tool for git based on conventional commits
+  topics: cli, tools, git
 
   private: false
   has_issues: true

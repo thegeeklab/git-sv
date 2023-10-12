@@ -1,0 +1,13 @@
+git-sv
+YAML
+.gitsv
+cli
+getsection
+timefmt
+cfg
+json
+changelog
+ReleaseNoteSection
+ReleaseNoteCommitsSection
+ReleaseNoteBreakingChangeSection
+ReleaseNoteSection
