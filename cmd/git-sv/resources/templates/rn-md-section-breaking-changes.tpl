@@ -1,7 +1,7 @@
-{{- if ne .Name ""}}
+{{- if ne .Name "" }}
 
-### {{.Name}}
-{{range $k,$v := .Messages}}
-- {{$v}}
-{{- end}}
-{{- end}}
+### {{ .Name }}
+{{ range $k,$v := .Messages }}
+- {{ $v }}
+{{- end }}
+{{- end -}}

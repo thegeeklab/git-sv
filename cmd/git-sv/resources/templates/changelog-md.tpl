@@ -1,6 +1,6 @@
 # Changelog
-{{- range .}}
+{{- range . }}
 
-{{template "releasenotes-md.tpl" .}}
+{{ template "releasenotes-md.tpl" . }}
 ---
-{{- end}}
+{{- end -}}
