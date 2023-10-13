@@ -11,17 +11,13 @@ import (
 
 var templatesFS = os.DirFS("../cmd/git-sv/resources/templates")
 
-var dateChangelog = `## v1.0.0 (2020-05-01)
-`
+var dateChangelog = `## v1.0.0 (2020-05-01)`
 
-var nonVersioningChangelog = `## abc (2020-05-01)
-`
+var nonVersioningChangelog = `## abc (2020-05-01)`
 
-var emptyDateChangelog = `## v1.0.0
-`
+var emptyDateChangelog = `## v1.0.0`
 
-var emptyVersionChangelog = `## 2020-05-01
-`
+var emptyVersionChangelog = `## 2020-05-01`
 
 var fullChangeLog = `## v1.0.0 (2020-05-01)
 
@@ -39,8 +35,7 @@ var fullChangeLog = `## v1.0.0 (2020-05-01)
 
 ### Breaking Changes
 
-- break change message
-`
+- break change message`
 
 func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 	date, _ := time.Parse("2006-01-02", "2020-05-01")
