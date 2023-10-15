@@ -243,6 +243,8 @@ git-sv commit-log --range tag
 
 Special thanks to all [contributors](https://github.com/thegeeklab/git-sv/graphs/contributors). If you would like to contribute, please see the [instructions](https://github.com/thegeeklab/git-sv/blob/main/CONTRIBUTING.md).
 
+This project is a fork of [sv4git](https://github.com/bvieira/sv4git) from Beatriz Vieira. Thanks for your work.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/thegeeklab/git-sv/blob/main/LICENSE) file for details.
