@@ -76,28 +76,28 @@ type MessageProcessor interface {
 	Parse(subject, body string) (CommitMessage, error)
 }
 
-// NewMessageProcessor MessageProcessorImpl constructor.
-func NewMessageProcessor(mcfg CommitMessageConfig, bcfg BranchesConfig) *MessageProcessorImpl {
-	return &MessageProcessorImpl{
+// NewMessageProcessor BaseMessageProcessor constructor.
+func NewMessageProcessor(mcfg CommitMessageConfig, bcfg BranchesConfig) *BaseMessageProcessor {
+	return &BaseMessageProcessor{
 		messageCfg:  mcfg,
 		branchesCfg: bcfg,
 	}
 }
 
-// MessageProcessorImpl process validate message hook.
-type MessageProcessorImpl struct {
+// BaseMessageProcessor process validate message hook.
+type BaseMessageProcessor struct {
 	messageCfg  CommitMessageConfig
 	branchesCfg BranchesConfig
 }
 
 // SkipBranch check if branch should be ignored.
-func (p MessageProcessorImpl) SkipBranch(branch string, detached bool) bool {
+func (p BaseMessageProcessor) SkipBranch(branch string, detached bool) bool {
 	return contains(branch, p.branchesCfg.Skip) ||
 		(p.branchesCfg.SkipDetached != nil && *p.branchesCfg.SkipDetached && detached)
 }
 
 // Validate commit message.
-func (p MessageProcessorImpl) Validate(message string) error {
+func (p BaseMessageProcessor) Validate(message string) error {
 	subject, body := splitCommitMessageContent(message)
 	msg, parseErr := p.Parse(subject, body)
 
@@ -121,7 +121,7 @@ func (p MessageProcessorImpl) Validate(message string) error {
 }
 
 // ValidateType check if commit type is valid.
-func (p MessageProcessorImpl) ValidateType(ctype string) error {
+func (p BaseMessageProcessor) ValidateType(ctype string) error {
 	if ctype == "" || !contains(ctype, p.messageCfg.Types) {
 		return fmt.Errorf(
 			"%w: type must be one of [%s]",
@@ -134,7 +134,7 @@ func (p MessageProcessorImpl) ValidateType(ctype string) error {
 }
 
 // ValidateScope check if commit scope is valid.
-func (p MessageProcessorImpl) ValidateScope(scope string) error {
+func (p BaseMessageProcessor) ValidateScope(scope string) error {
 	if len(p.messageCfg.Scope.Values) > 0 && !contains(scope, p.messageCfg.Scope.Values) {
 		return fmt.Errorf(
 			"%w: scope must one of [%s]",
@@ -147,7 +147,7 @@ func (p MessageProcessorImpl) ValidateScope(scope string) error {
 }
 
 // ValidateDescription check if commit description is valid.
-func (p MessageProcessorImpl) ValidateDescription(description string) error {
+func (p BaseMessageProcessor) ValidateDescription(description string) error {
 	if !regexp.MustCompile("^[a-z]+.*$").MatchString(description) {
 		return fmt.Errorf("%w: description [%s] must start with lowercase", errInvalidCommitMessage, description)
 	}
@@ -156,7 +156,7 @@ func (p MessageProcessorImpl) ValidateDescription(description string) error {
 }
 
 // Enhance add metadata on commit message.
-func (p MessageProcessorImpl) Enhance(branch, message string) (string, error) {
+func (p BaseMessageProcessor) Enhance(branch, message string) (string, error) {
 	if p.branchesCfg.DisableIssue || p.messageCfg.IssueFooterConfig().Key == "" ||
 		hasIssueID(message, p.messageCfg.IssueFooterConfig()) {
 		return "", nil // enhance disabled
@@ -192,7 +192,7 @@ func formatIssueFooter(cfg CommitMessageFooterConfig, issue string) string {
 }
 
 // IssueID try to extract issue id from branch, return empty if not found.
-func (p MessageProcessorImpl) IssueID(branch string) (string, error) {
+func (p BaseMessageProcessor) IssueID(branch string) (string, error) {
 	if p.branchesCfg.DisableIssue || p.messageCfg.Issue.Regex == "" {
 		return "", nil
 	}
@@ -213,7 +213,7 @@ func (p MessageProcessorImpl) IssueID(branch string) (string, error) {
 }
 
 // Format a commit message returning header, body and footer.
-func (p MessageProcessorImpl) Format(msg CommitMessage) (string, string, string) {
+func (p BaseMessageProcessor) Format(msg CommitMessage) (string, string, string) {
 	var header strings.Builder
 
 	header.WriteString(msg.Type)
@@ -246,7 +246,7 @@ func removeCarriage(commit string) string {
 }
 
 // Parse a commit message.
-func (p MessageProcessorImpl) Parse(subject, body string) (CommitMessage, error) {
+func (p BaseMessageProcessor) Parse(subject, body string) (CommitMessage, error) {
 	preparedSubject, err := p.prepareHeader(subject)
 	commitBody := removeCarriage(body)
 
@@ -286,7 +286,7 @@ func (p MessageProcessorImpl) Parse(subject, body string) (CommitMessage, error)
 	}, nil
 }
 
-func (p MessageProcessorImpl) prepareHeader(header string) (string, error) {
+func (p BaseMessageProcessor) prepareHeader(header string) (string, error) {
 	if p.messageCfg.HeaderSelector == "" {
 		return header, nil
 	}

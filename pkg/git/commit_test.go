@@ -7,7 +7,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-func TestSemVerCommitsProcessorImpl_NextVersion(t *testing.T) {
+func TestSemVerCommitsProcessor_NextVersion(t *testing.T) {
 	tests := []struct {
 		name          string
 		ignoreUnknown bool
@@ -116,10 +116,10 @@ func TestSemVerCommitsProcessorImpl_NextVersion(t *testing.T) {
 				CommitMessageConfig{Types: []string{"major", "minor", "patch", "none"}})
 			got, gotUpdated := p.NextVersion(tt.version, tt.commits)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SemVerCommitsProcessorImpl.NextVersion() Version = %v, want %v", got, tt.want)
+				t.Errorf("SemVerCommitsProcessor.NextVersion() Version = %v, want %v", got, tt.want)
 			}
 			if tt.wantUpdated != gotUpdated {
-				t.Errorf("SemVerCommitsProcessorImpl.NextVersion() Updated = %v, want %v", gotUpdated, tt.wantUpdated)
+				t.Errorf("SemVerCommitsProcessor.NextVersion() Updated = %v, want %v", gotUpdated, tt.wantUpdated)
 			}
 		})
 	}

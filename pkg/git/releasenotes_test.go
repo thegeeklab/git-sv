@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
+func TestBaseReleaseNoteProcessor_Create(t *testing.T) {
 	date := time.Now()
 
 	tests := []struct {
@@ -115,7 +115,7 @@ func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 					},
 				})
 			if got := p.Create(tt.version, tt.tag, tt.date, tt.commits); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ReleaseNoteProcessorImpl.Create() = %v, want %v", got, tt.want)
+				t.Errorf("BaseReleaseNoteProcessor.Create() = %v, want %v", got, tt.want)
 			}
 		})
 	}

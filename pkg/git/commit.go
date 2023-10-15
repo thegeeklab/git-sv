@@ -28,13 +28,13 @@ func ToVersion(value string) (*semver.Version, error) {
 	return semver.NewVersion(version)
 }
 
-// SemVerCommitsProcessor interface.
-type SemVerCommitsProcessor interface {
+// CommitsProcessor interface.
+type CommitsProcessor interface {
 	NextVersion(version *semver.Version, commits []CommitLog) (*semver.Version, bool)
 }
 
-// SemVerCommitsProcessorImpl process versions using commit log.
-type SemVerCommitsProcessorImpl struct {
+// SemVerCommitsProcessor process versions using commit log.
+type SemVerCommitsProcessor struct {
 	MajorVersionTypes         map[string]struct{}
 	MinorVersionTypes         map[string]struct{}
 	PatchVersionTypes         map[string]struct{}
@@ -43,8 +43,8 @@ type SemVerCommitsProcessorImpl struct {
 }
 
 // NewSemVerCommitsProcessor SemanticVersionCommitsProcessorImpl constructor.
-func NewSemVerCommitsProcessor(vcfg VersioningConfig, mcfg CommitMessageConfig) *SemVerCommitsProcessorImpl {
-	return &SemVerCommitsProcessorImpl{
+func NewSemVerCommitsProcessor(vcfg VersioningConfig, mcfg CommitMessageConfig) *SemVerCommitsProcessor {
+	return &SemVerCommitsProcessor{
 		IncludeUnknownTypeAsPatch: !vcfg.IgnoreUnknown,
 		MajorVersionTypes:         toMap(vcfg.UpdateMajor),
 		MinorVersionTypes:         toMap(vcfg.UpdateMinor),
@@ -54,7 +54,7 @@ func NewSemVerCommitsProcessor(vcfg VersioningConfig, mcfg CommitMessageConfig) 
 }
 
 // NextVersion calculates next version based on commit log.
-func (p SemVerCommitsProcessorImpl) NextVersion(
+func (p SemVerCommitsProcessor) NextVersion(
 	version *semver.Version, commits []CommitLog,
 ) (*semver.Version, bool) {
 	versionToUpdate := none
@@ -87,7 +87,7 @@ func updateVersion(version semver.Version, versionToUpdate versionType) semver.V
 	}
 }
 
-func (p SemVerCommitsProcessorImpl) versionTypeToUpdate(commit CommitLog) versionType {
+func (p SemVerCommitsProcessor) versionTypeToUpdate(commit CommitLog) versionType {
 	if commit.Message.IsBreakingChange {
 		return major
 	}

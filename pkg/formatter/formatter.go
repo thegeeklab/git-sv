@@ -25,18 +25,18 @@ type OutputFormatter interface {
 	FormatChangelog(releasenotes []git.ReleaseNote) (string, error)
 }
 
-// OutputFormatterImpl formater for release note and changelog.
-type OutputFormatterImpl struct {
+// BaseOutputFormatter formater for release note and changelog.
+type BaseOutputFormatter struct {
 	templates *template.Template
 }
 
 // NewOutputFormatter TemplateProcessor constructor.
-func NewOutputFormatter(tpls *template.Template) *OutputFormatterImpl {
-	return &OutputFormatterImpl{templates: tpls}
+func NewOutputFormatter(tpls *template.Template) *BaseOutputFormatter {
+	return &BaseOutputFormatter{templates: tpls}
 }
 
 // FormatReleaseNote format a release note.
-func (p OutputFormatterImpl) FormatReleaseNote(releasenote git.ReleaseNote) (string, error) {
+func (p BaseOutputFormatter) FormatReleaseNote(releasenote git.ReleaseNote) (string, error) {
 	var b bytes.Buffer
 	if err := p.templates.ExecuteTemplate(&b, "releasenotes-md.tpl", releaseNoteVariables(releasenote)); err != nil {
 		return "", err
@@ -46,7 +46,7 @@ func (p OutputFormatterImpl) FormatReleaseNote(releasenote git.ReleaseNote) (str
 }
 
 // FormatChangelog format a changelog.
-func (p OutputFormatterImpl) FormatChangelog(releasenotes []git.ReleaseNote) (string, error) {
+func (p BaseOutputFormatter) FormatChangelog(releasenotes []git.ReleaseNote) (string, error) {
 	templateVars := make([]releaseNoteTemplateVariables, len(releasenotes))
 	for i, v := range releasenotes {
 		templateVars[i] = releaseNoteVariables(v)

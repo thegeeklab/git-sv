@@ -95,7 +95,7 @@ func getTagVersionInfo(gsv git.SV, tag string) (*semver.Version, time.Time, []gi
 }
 
 func getNextVersionInfo(
-	gsv git.SV, semverProcessor git.SemVerCommitsProcessor,
+	gsv git.SV, semverProcessor git.CommitsProcessor,
 ) (*semver.Version, bool, time.Time, []git.CommitLog, error) {
 	lastTag := gsv.LastTag()
 

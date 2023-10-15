@@ -38,7 +38,7 @@ var fullChangeLog = `## v1.0.0 (2020-05-01)
 
 - break change message`
 
-func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
+func TestBaseOutputFormatter_FormatReleaseNote(t *testing.T) {
 	date, _ := time.Parse("2006-01-02", "2020-05-01")
 
 	tests := []struct {
@@ -57,11 +57,11 @@ func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewOutputFormatter(tmpls).FormatReleaseNote(tt.input)
 			if got != tt.want {
-				t.Errorf("OutputFormatterImpl.FormatReleaseNote() = %v, want %v", got, tt.want)
+				t.Errorf("BaseOutputFormatter.FormatReleaseNote() = %v, want %v", got, tt.want)
 			}
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("OutputFormatterImpl.FormatReleaseNote() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BaseOutputFormatter.FormatReleaseNote() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -22,7 +22,7 @@ func ReleaseNotesFlags() []cli.Flag {
 
 func ReleaseNotesHandler(
 	gsv git.SV,
-	semverProcessor git.SemVerCommitsProcessor,
+	semverProcessor git.CommitsProcessor,
 	rnProcessor git.ReleaseNoteProcessor,
 	outputFormatter formatter.OutputFormatter,
 ) cli.ActionFunc {

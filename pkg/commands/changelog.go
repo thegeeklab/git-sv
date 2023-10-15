@@ -34,7 +34,7 @@ func ChangelogFlags() []cli.Flag {
 
 func ChangelogHandler(
 	gsv git.SV,
-	semverProcessor git.SemVerCommitsProcessor,
+	semverProcessor git.CommitsProcessor,
 	rnProcessor git.ReleaseNoteProcessor,
 	formatter formatter.OutputFormatter,
 ) cli.ActionFunc {

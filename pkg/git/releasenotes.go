@@ -11,18 +11,18 @@ type ReleaseNoteProcessor interface {
 	Create(version *semver.Version, tag string, date time.Time, commits []CommitLog) ReleaseNote
 }
 
-// ReleaseNoteProcessorImpl release note based on commit log.
-type ReleaseNoteProcessorImpl struct {
+// BaseReleaseNoteProcessor release note based on commit log.
+type BaseReleaseNoteProcessor struct {
 	cfg ReleaseNotesConfig
 }
 
 // NewReleaseNoteProcessor ReleaseNoteProcessor constructor.
-func NewReleaseNoteProcessor(cfg ReleaseNotesConfig) *ReleaseNoteProcessorImpl {
-	return &ReleaseNoteProcessorImpl{cfg: cfg}
+func NewReleaseNoteProcessor(cfg ReleaseNotesConfig) *BaseReleaseNoteProcessor {
+	return &BaseReleaseNoteProcessor{cfg: cfg}
 }
 
 // Create create a release note based on commits.
-func (p ReleaseNoteProcessorImpl) Create(
+func (p BaseReleaseNoteProcessor) Create(
 	version *semver.Version,
 	tag string,
 	date time.Time,
@@ -68,7 +68,7 @@ func (p ReleaseNoteProcessorImpl) Create(
 	}
 }
 
-func (p ReleaseNoteProcessorImpl) toReleaseNoteSections(
+func (p BaseReleaseNoteProcessor) toReleaseNoteSections(
 	commitSections map[string]ReleaseNoteCommitsSection,
 	breakingChange ReleaseNoteBreakingChangeSection,
 ) []ReleaseNoteSection {

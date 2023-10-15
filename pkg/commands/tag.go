@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func TagHandler(gsv git.SV, semverProcessor git.SemVerCommitsProcessor) cli.ActionFunc {
+func TagHandler(gsv git.SV, semverProcessor git.CommitsProcessor) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		lastTag := gsv.LastTag()
 
