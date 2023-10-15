@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 )
 
 func Test_checkTemplatesFiles(t *testing.T) {
@@ -51,22 +51,22 @@ func Test_timeFormat(t *testing.T) {
 func Test_getSection(t *testing.T) {
 	tests := []struct {
 		name        string
-		sections    []git.ReleaseNoteSection
+		sections    []app.ReleaseNoteSection
 		sectionName string
-		want        git.ReleaseNoteSection
+		want        app.ReleaseNoteSection
 	}{
 		{
-			"existing section", []git.ReleaseNoteSection{
-				git.ReleaseNoteCommitsSection{Name: "section 0"},
-				git.ReleaseNoteCommitsSection{Name: "section 1"},
-				git.ReleaseNoteCommitsSection{Name: "section 2"},
-			}, "section 1", git.ReleaseNoteCommitsSection{Name: "section 1"},
+			"existing section", []app.ReleaseNoteSection{
+				app.ReleaseNoteCommitsSection{Name: "section 0"},
+				app.ReleaseNoteCommitsSection{Name: "section 1"},
+				app.ReleaseNoteCommitsSection{Name: "section 2"},
+			}, "section 1", app.ReleaseNoteCommitsSection{Name: "section 1"},
 		},
 		{
-			"nonexisting section", []git.ReleaseNoteSection{
-				git.ReleaseNoteCommitsSection{Name: "section 0"},
-				git.ReleaseNoteCommitsSection{Name: "section 1"},
-				git.ReleaseNoteCommitsSection{Name: "section 2"},
+			"nonexisting section", []app.ReleaseNoteSection{
+				app.ReleaseNoteCommitsSection{Name: "section 0"},
+				app.ReleaseNoteCommitsSection{Name: "section 1"},
+				app.ReleaseNoteCommitsSection{Name: "section 2"},
 			}, "section 10", nil,
 		},
 	}

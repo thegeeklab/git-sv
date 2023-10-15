@@ -1,4 +1,4 @@
-package git
+package app
 
 import (
 	"bufio"
@@ -20,17 +20,6 @@ const (
 )
 
 var errUnknownGitError = errors.New("git command failed")
-
-// Git commands.
-type SV interface {
-	LastTag() string
-	Log(lr LogRange) ([]CommitLog, error)
-	Commit(header, body, footer string) error
-	Tag(version semver.Version) (string, error)
-	Tags() ([]Tag, error)
-	Branch() string
-	IsDetached() (bool, error)
-}
 
 // CommitLog description of a single commit log.
 type CommitLog struct {
@@ -70,21 +59,21 @@ func NewLogRange(t LogRangeType, start, end string) LogRange {
 }
 
 // Impl git command implementation.
-type Impl struct {
+type GitSV struct {
 	messageProcessor MessageProcessor
 	tagCfg           TagConfig
 }
 
 // New constructor.
-func New(messageProcessor MessageProcessor, cfg TagConfig) *Impl {
-	return &Impl{
+func New(messageProcessor MessageProcessor, cfg TagConfig) GitSV {
+	return GitSV{
 		messageProcessor: messageProcessor,
 		tagCfg:           cfg,
 	}
 }
 
 // LastTag get last tag, if no tag found, return empty.
-func (g Impl) LastTag() string {
+func (g GitSV) LastTag() string {
 	//nolint:gosec
 	cmd := exec.Command(
 		"git",
@@ -107,7 +96,7 @@ func (g Impl) LastTag() string {
 }
 
 // Log return git log.
-func (g Impl) Log(lr LogRange) ([]CommitLog, error) {
+func (g GitSV) Log(lr LogRange) ([]CommitLog, error) {
 	format := "--pretty=format:\"%ad" + logSeparator +
 		"%at" + logSeparator +
 		"%cN" + logSeparator +
@@ -145,7 +134,7 @@ func (g Impl) Log(lr LogRange) ([]CommitLog, error) {
 }
 
 // Commit runs git commit.
-func (g Impl) Commit(header, body, footer string) error {
+func (g GitSV) Commit(header, body, footer string) error {
 	cmd := exec.Command("git", "commit", "-m", header, "-m", "", "-m", body, "-m", "", "-m", footer)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -154,7 +143,7 @@ func (g Impl) Commit(header, body, footer string) error {
 }
 
 // Tag create a git tag.
-func (g Impl) Tag(version semver.Version) (string, error) {
+func (g GitSV) Tag(version semver.Version) (string, error) {
 	tag := fmt.Sprintf(*g.tagCfg.Pattern, version.Major(), version.Minor(), version.Patch())
 	tagMsg := fmt.Sprintf("Version %d.%d.%d", version.Major(), version.Minor(), version.Patch())
 
@@ -172,7 +161,7 @@ func (g Impl) Tag(version semver.Version) (string, error) {
 }
 
 // Tags list repository tags.
-func (g Impl) Tags() ([]Tag, error) {
+func (g GitSV) Tags() ([]Tag, error) {
 	//nolint:gosec
 	cmd := exec.Command(
 		"git",
@@ -193,7 +182,7 @@ func (g Impl) Tags() ([]Tag, error) {
 }
 
 // Branch get git branch.
-func (Impl) Branch() string {
+func (g GitSV) Branch() string {
 	cmd := exec.Command("git", "symbolic-ref", "--short", "HEAD")
 
 	out, err := cmd.CombinedOutput()
@@ -205,7 +194,7 @@ func (Impl) Branch() string {
 }
 
 // IsDetached check if is detached.
-func (Impl) IsDetached() (bool, error) {
+func (g GitSV) IsDetached() (bool, error) {
 	cmd := exec.Command("git", "symbolic-ref", "-q", "HEAD")
 
 	out, err := cmd.CombinedOutput()

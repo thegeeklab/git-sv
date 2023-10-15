@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
 	"github.com/urfave/cli/v2"
 )
 
@@ -30,7 +30,7 @@ func CommitNotesFlags() []cli.Flag {
 }
 
 func CommitNotesHandler(
-	git git.SV, rnProcessor git.ReleaseNoteProcessor, outputFormatter formatter.OutputFormatter,
+	git app.GitSV, rnProcessor app.ReleaseNoteProcessor, outputFormatter formatter.OutputFormatter,
 ) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var date time.Time

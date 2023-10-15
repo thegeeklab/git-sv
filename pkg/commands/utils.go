@@ -8,28 +8,27 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/thegeeklab/git-sv/v2/pkg/config"
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 )
 
-func getTagCommits(gsv git.SV, tag string) ([]git.CommitLog, error) {
+func getTagCommits(gsv app.GitSV, tag string) ([]app.CommitLog, error) {
 	prev, _, err := getTags(gsv, tag)
 	if err != nil {
 		return nil, err
 	}
 
-	return gsv.Log(git.NewLogRange(git.TagRange, prev, tag))
+	return gsv.Log(app.NewLogRange(app.TagRange, prev, tag))
 }
 
-func getTags(gsv git.SV, tag string) (string, git.Tag, error) {
+func getTags(gsv app.GitSV, tag string) (string, app.Tag, error) {
 	tags, err := gsv.Tags()
 	if err != nil {
-		return "", git.Tag{}, err
+		return "", app.Tag{}, err
 	}
 
 	index := find(tag, tags)
 	if index < 0 {
-		return "", git.Tag{}, fmt.Errorf("%w: %s not found, check tag filter", errUnknownTag, tag)
+		return "", app.Tag{}, fmt.Errorf("%w: %s not found, check tag filter", errUnknownTag, tag)
 	}
 
 	previousTag := ""
@@ -40,7 +39,7 @@ func getTags(gsv git.SV, tag string) (string, git.Tag, error) {
 	return previousTag, tags[index], nil
 }
 
-func find(tag string, tags []git.Tag) int {
+func find(tag string, tags []app.Tag) int {
 	for i := 0; i < len(tags); i++ {
 		if tag == tags[i].Name {
 			return i
@@ -50,22 +49,22 @@ func find(tag string, tags []git.Tag) int {
 	return -1
 }
 
-func logRange(gsv git.SV, rangeFlag, startFlag, endFlag string) (git.LogRange, error) {
+func logRange(gsv app.GitSV, rangeFlag, startFlag, endFlag string) (app.LogRange, error) {
 	switch rangeFlag {
-	case string(git.TagRange):
-		return git.NewLogRange(git.TagRange, str(startFlag, gsv.LastTag()), endFlag), nil
-	case string(git.DateRange):
-		return git.NewLogRange(git.DateRange, startFlag, endFlag), nil
-	case string(git.HashRange):
-		return git.NewLogRange(git.HashRange, startFlag, endFlag), nil
+	case string(app.TagRange):
+		return app.NewLogRange(app.TagRange, str(startFlag, gsv.LastTag()), endFlag), nil
+	case string(app.DateRange):
+		return app.NewLogRange(app.DateRange, startFlag, endFlag), nil
+	case string(app.HashRange):
+		return app.NewLogRange(app.HashRange, startFlag, endFlag), nil
 	default:
-		return git.LogRange{}, fmt.Errorf(
+		return app.LogRange{}, fmt.Errorf(
 			"%w: %s, expected: %s, %s or %s",
 			errInvalidRange,
 			rangeFlag,
-			git.TagRange,
-			git.DateRange,
-			git.HashRange,
+			app.TagRange,
+			app.DateRange,
+			app.HashRange,
 		)
 	}
 }
@@ -78,15 +77,15 @@ func str(value, defaultValue string) string {
 	return defaultValue
 }
 
-func getTagVersionInfo(gsv git.SV, tag string) (*semver.Version, time.Time, []git.CommitLog, error) {
-	tagVersion, _ := git.ToVersion(tag)
+func getTagVersionInfo(gsv app.GitSV, tag string) (*semver.Version, time.Time, []app.CommitLog, error) {
+	tagVersion, _ := app.ToVersion(tag)
 
 	previousTag, currentTag, err := getTags(gsv, tag)
 	if err != nil {
 		return nil, time.Time{}, nil, fmt.Errorf("error listing tags, message: %w", err)
 	}
 
-	commits, err := gsv.Log(git.NewLogRange(git.TagRange, previousTag, tag))
+	commits, err := gsv.Log(app.NewLogRange(app.TagRange, previousTag, tag))
 	if err != nil {
 		return nil, time.Time{}, nil, fmt.Errorf("error getting git log from tag: %s, message: %w", tag, err)
 	}
@@ -95,22 +94,22 @@ func getTagVersionInfo(gsv git.SV, tag string) (*semver.Version, time.Time, []gi
 }
 
 func getNextVersionInfo(
-	gsv git.SV, semverProcessor git.CommitsProcessor,
-) (*semver.Version, bool, time.Time, []git.CommitLog, error) {
+	gsv app.GitSV, semverProcessor app.CommitsProcessor,
+) (*semver.Version, bool, time.Time, []app.CommitLog, error) {
 	lastTag := gsv.LastTag()
 
-	commits, err := gsv.Log(git.NewLogRange(git.TagRange, lastTag, ""))
+	commits, err := gsv.Log(app.NewLogRange(app.TagRange, lastTag, ""))
 	if err != nil {
 		return nil, false, time.Time{}, nil, fmt.Errorf("error getting git log, message: %w", err)
 	}
 
-	currentVer, _ := git.ToVersion(lastTag)
+	currentVer, _ := app.ToVersion(lastTag)
 	version, updated := semverProcessor.NextVersion(currentVer, commits)
 
 	return version, updated, time.Now(), commits, nil
 }
 
-func getCommitType(cfg *config.Config, p git.MessageProcessor, input string) (string, error) {
+func getCommitType(cfg *app.Config, p app.MessageProcessor, input string) (string, error) {
 	if input == "" {
 		t, err := promptType(cfg.CommitMessage.Types)
 
@@ -120,7 +119,7 @@ func getCommitType(cfg *config.Config, p git.MessageProcessor, input string) (st
 	return input, p.ValidateType(input)
 }
 
-func getCommitScope(cfg *config.Config, p git.MessageProcessor, input string, noScope bool) (string, error) {
+func getCommitScope(cfg *app.Config, p app.MessageProcessor, input string, noScope bool) (string, error) {
 	if input == "" && !noScope {
 		return promptScope(cfg.CommitMessage.Scope.Values)
 	}
@@ -128,7 +127,7 @@ func getCommitScope(cfg *config.Config, p git.MessageProcessor, input string, no
 	return input, p.ValidateScope(input)
 }
 
-func getCommitDescription(p git.MessageProcessor, input string) (string, error) {
+func getCommitDescription(p app.MessageProcessor, input string) (string, error) {
 	if input == "" {
 		return promptSubject()
 	}
@@ -160,7 +159,7 @@ func getCommitBody(noBody bool) (string, error) {
 	return fullBody.String(), nil
 }
 
-func getCommitIssue(cfg *config.Config, p git.MessageProcessor, branch string, noIssue bool) (string, error) {
+func getCommitIssue(cfg *app.Config, p app.MessageProcessor, branch string, noIssue bool) (string, error) {
 	branchIssue, err := p.IssueID(branch)
 	if err != nil {
 		return "", err

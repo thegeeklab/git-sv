@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
 	"github.com/urfave/cli/v2"
 )
 
@@ -21,14 +21,14 @@ func ReleaseNotesFlags() []cli.Flag {
 }
 
 func ReleaseNotesHandler(
-	gsv git.SV,
-	semverProcessor git.CommitsProcessor,
-	rnProcessor git.ReleaseNoteProcessor,
+	gsv app.GitSV,
+	semverProcessor app.CommitsProcessor,
+	rnProcessor app.ReleaseNoteProcessor,
 	outputFormatter formatter.OutputFormatter,
 ) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var (
-			commits   []git.CommitLog
+			commits   []app.CommitLog
 			rnVersion *semver.Version
 			tag       string
 			date      time.Time

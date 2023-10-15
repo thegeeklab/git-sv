@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/rs/zerolog/log"
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/urfave/cli/v2"
 )
 
@@ -37,7 +37,7 @@ func ValidateCommitMessageFlags() []cli.Flag {
 	}
 }
 
-func ValidateCommitMessageHandler(gsv git.SV, messageProcessor git.MessageProcessor) cli.ActionFunc {
+func ValidateCommitMessageHandler(gsv app.GitSV, messageProcessor app.MessageProcessor) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		branch := gsv.Branch()
 		detached, derr := gsv.IsDetached()

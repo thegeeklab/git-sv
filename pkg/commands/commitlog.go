@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,7 +26,7 @@ func CommitLogFlags() []cli.Flag {
 			Name:    "r",
 			Aliases: []string{"range"},
 			Usage:   "type of range of commits, use: tag, date or hash",
-			Value:   string(git.TagRange),
+			Value:   string(app.TagRange),
 		},
 		&cli.StringFlag{
 			Name:    "s",
@@ -41,10 +41,10 @@ func CommitLogFlags() []cli.Flag {
 	}
 }
 
-func CommitLogHandler(gsv git.SV) cli.ActionFunc {
+func CommitLogHandler(gsv app.GitSV) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var (
-			commits []git.CommitLog
+			commits []app.CommitLog
 			err     error
 		)
 
@@ -53,7 +53,7 @@ func CommitLogHandler(gsv git.SV) cli.ActionFunc {
 		startFlag := c.String("s")
 		endFlag := c.String("e")
 
-		if tagFlag != "" && (rangeFlag != string(git.TagRange) || startFlag != "" || endFlag != "") {
+		if tagFlag != "" && (rangeFlag != string(app.TagRange) || startFlag != "" || endFlag != "") {
 			return errCanNotCreateTagFlag
 		}
 

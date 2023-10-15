@@ -7,10 +7,9 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/thegeeklab/git-sv/v2/pkg/commands"
-	"github.com/thegeeklab/git-sv/v2/pkg/config"
 	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
 	"github.com/thegeeklab/git-sv/v2/pkg/templates"
 	"github.com/urfave/cli/v2"
 )
@@ -28,12 +27,12 @@ const (
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	cfg := config.New(configDir, configFilename)
+	cfg := app.NewConfig(configDir, configFilename)
 
-	messageProcessor := git.NewMessageProcessor(cfg.CommitMessage, cfg.Branches)
-	g := git.New(messageProcessor, cfg.Tag)
-	semverProcessor := git.NewSemVerCommitsProcessor(cfg.Versioning, cfg.CommitMessage)
-	releasenotesProcessor := git.NewReleaseNoteProcessor(cfg.ReleaseNotes)
+	messageProcessor := app.NewMessageProcessor(cfg.CommitMessage, cfg.Branches)
+	g := app.New(messageProcessor, cfg.Tag)
+	semverProcessor := app.NewSemVerCommitsProcessor(cfg.Versioning, cfg.CommitMessage)
+	releasenotesProcessor := app.NewReleaseNoteProcessor(cfg.ReleaseNotes)
 
 	tpls := templates.New(configDir)
 	outputFormatter := formatter.NewOutputFormatter(tpls)
@@ -44,7 +43,7 @@ func main() {
 
 	app := &cli.App{
 		Name:    "git-sv",
-		Usage:   "Semantic version for git.",
+		Usage:   "Semantic version for app.",
 		Version: BuildVersion,
 		Flags: []cli.Flag{
 			&cli.StringFlag{

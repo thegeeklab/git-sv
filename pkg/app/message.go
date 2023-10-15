@@ -1,4 +1,4 @@
-package git
+package app
 
 import (
 	"bufio"

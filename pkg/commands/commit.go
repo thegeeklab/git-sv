@@ -3,8 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/config"
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/urfave/cli/v2"
 )
 
@@ -53,7 +52,7 @@ func CommitFlags() []cli.Flag {
 	}
 }
 
-func CommitHandler(cfg *config.Config, gsv git.SV, messageProcessor git.MessageProcessor) cli.ActionFunc {
+func CommitHandler(cfg *app.Config, gsv app.GitSV, messageProcessor app.MessageProcessor) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		noBreaking := c.Bool("no-breaking")
 		noBody := c.Bool("no-body")
@@ -95,7 +94,7 @@ func CommitHandler(cfg *config.Config, gsv git.SV, messageProcessor git.MessageP
 		}
 
 		header, body, footer := messageProcessor.Format(
-			git.NewCommitMessage(ctype, scope, subject, fullBody, issue, breakingChange),
+			app.NewCommitMessage(ctype, scope, subject, fullBody, issue, breakingChange),
 		)
 
 		err = gsv.Commit(header, body, footer)

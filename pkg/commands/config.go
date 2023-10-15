@@ -3,14 +3,14 @@ package commands
 import (
 	"fmt"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/config"
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 )
 
 func ConfigDefaultHandler() cli.ActionFunc {
 	return func(c *cli.Context) error {
-		cfg := config.GetDefault()
+		cfg := app.GetDefault()
 
 		content, err := yaml.Marshal(&cfg)
 		if err != nil {
@@ -23,7 +23,7 @@ func ConfigDefaultHandler() cli.ActionFunc {
 	}
 }
 
-func ConfigShowHandler(cfg *config.Config) cli.ActionFunc {
+func ConfigShowHandler(cfg *app.Config) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		content, err := yaml.Marshal(cfg)
 		if err != nil {

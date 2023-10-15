@@ -1,4 +1,4 @@
-package git
+package app
 
 import "github.com/Masterminds/semver/v3"
 

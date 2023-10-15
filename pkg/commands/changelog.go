@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
-	"github.com/thegeeklab/git-sv/v2/pkg/git"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,9 +33,9 @@ func ChangelogFlags() []cli.Flag {
 }
 
 func ChangelogHandler(
-	gsv git.SV,
-	semverProcessor git.CommitsProcessor,
-	rnProcessor git.ReleaseNoteProcessor,
+	gsv app.GitSV,
+	semverProcessor app.CommitsProcessor,
+	rnProcessor app.ReleaseNoteProcessor,
 	formatter formatter.OutputFormatter,
 ) cli.ActionFunc {
 	return func(c *cli.Context) error {
@@ -48,7 +48,7 @@ func ChangelogHandler(
 			return tags[i].Date.After(tags[j].Date)
 		})
 
-		var releaseNotes []git.ReleaseNote
+		var releaseNotes []app.ReleaseNote
 
 		size := c.Int("size")
 		all := c.Bool("all")
@@ -76,16 +76,16 @@ func ChangelogHandler(
 				previousTag = tags[i+1].Name
 			}
 
-			if semanticVersionOnly && !git.IsValidVersion(tag.Name) {
+			if semanticVersionOnly && !app.IsValidVersion(tag.Name) {
 				continue
 			}
 
-			commits, err := gsv.Log(git.NewLogRange(git.TagRange, previousTag, tag.Name))
+			commits, err := gsv.Log(app.NewLogRange(app.TagRange, previousTag, tag.Name))
 			if err != nil {
 				return fmt.Errorf("error getting git log from tag: %s, message: %w", tag.Name, err)
 			}
 
-			currentVer, _ := git.ToVersion(tag.Name)
+			currentVer, _ := app.ToVersion(tag.Name)
 			releaseNotes = append(releaseNotes, rnProcessor.Create(currentVer, tag.Name, tag.Date, commits))
 		}
 
