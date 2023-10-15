@@ -32,10 +32,12 @@ func main() {
 			&cli.StringFlag{
 				Name:  "log-level",
 				Usage: "log level",
+				Value: "info",
 			},
 		},
 		Before: func(ctx *cli.Context) error {
 			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 			lvl, err := zerolog.ParseLevel(ctx.String("log-level"))
 			if err != nil {
 				return err
@@ -132,7 +134,7 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 		},
 	}
 
-	if apperr := app.Run(os.Args); apperr != nil {
-		log.Fatal().Err(apperr).Msg("Execution error")
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal().Err(err).Msg("Execution error")
 	}
 }

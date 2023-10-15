@@ -45,7 +45,7 @@ func ReleaseNotesHandler(g app.GitSV) cli.ActionFunc {
 
 		output, err := g.OutputFormatter.FormatReleaseNote(releasenote)
 		if err != nil {
-			return fmt.Errorf("could not format release notes, message: %w", err)
+			return fmt.Errorf("could not format release notes: %w", err)
 		}
 
 		fmt.Println(output)

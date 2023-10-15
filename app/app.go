@@ -14,6 +14,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/thegeeklab/git-sv/v2/sv"
 	"github.com/thegeeklab/git-sv/v2/sv/formatter"
+	"github.com/thegeeklab/git-sv/v2/templates"
 )
 
 const (
@@ -61,8 +62,7 @@ type GitSV struct {
 	MessageProcessor      sv.MessageProcessor
 	CommitProcessor       sv.CommitProcessor
 	ReleasenotesProcessor sv.ReleaseNoteProcessor
-
-	OutputFormatter formatter.OutputFormatter
+	OutputFormatter       formatter.OutputFormatter
 }
 
 // New constructor.
@@ -72,6 +72,9 @@ func New() GitSV {
 	}
 
 	g.MessageProcessor = sv.NewMessageProcessor(g.Config.CommitMessage, g.Config.Branches)
+	g.CommitProcessor = sv.NewSemVerCommitProcessor(g.Config.Versioning, g.Config.CommitMessage)
+	g.ReleasenotesProcessor = sv.NewReleaseNoteProcessor(g.Config.ReleaseNotes)
+	g.OutputFormatter = formatter.NewOutputFormatter(templates.New(configDir))
 
 	return g
 }
