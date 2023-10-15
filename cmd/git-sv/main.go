@@ -20,6 +20,7 @@ var (
 
 func main() {
 	gsv := app.New()
+
 	cli.VersionPrinter = func(c *cli.Context) {
 		fmt.Printf("%s version=%s date=%s\n", c.App.Name, c.App.Version, BuildDate)
 	}
@@ -30,15 +31,16 @@ func main() {
 		Version: BuildVersion,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "log-level",
-				Usage: "log level",
-				Value: "info",
+				Name:        "log-level",
+				Usage:       "log level",
+				Value:       "info",
+				Destination: &gsv.Settings.LogLevel,
 			},
 		},
 		Before: func(ctx *cli.Context) error {
 			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-			lvl, err := zerolog.ParseLevel(ctx.String("log-level"))
+			lvl, err := zerolog.ParseLevel(gsv.Settings.LogLevel)
 			if err != nil {
 				return err
 			}
@@ -95,21 +97,21 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 				Action: commands.CommitNotesHandler(gsv),
-				Flags:  commands.CommitNotesFlags(),
+				Flags:  commands.CommitNotesFlags(&gsv.Settings.CommitNotesSettings),
 			},
 			{
 				Name:    "release-notes",
 				Aliases: []string{"rn"},
 				Usage:   "generate release notes",
 				Action:  commands.ReleaseNotesHandler(gsv),
-				Flags:   commands.ReleaseNotesFlags(),
+				Flags:   commands.ReleaseNotesFlags(&gsv.Settings.ReleaseNotesSettings),
 			},
 			{
 				Name:    "changelog",
 				Aliases: []string{"cgl"},
 				Usage:   "generate changelog",
 				Action:  commands.ChangelogHandler(gsv),
-				Flags:   commands.ChangelogFlags(),
+				Flags:   commands.ChangelogFlags(&gsv.Settings.ChangelogSettings),
 			},
 			{
 				Name:    "tag",

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"sort"
 
 	"github.com/thegeeklab/git-sv/v2/app"
@@ -9,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func ChangelogFlags() []cli.Flag {
+func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
 	return []cli.Flag{
 		&cli.IntFlag{
 			Name:    "size",
@@ -18,23 +19,31 @@ func ChangelogFlags() []cli.Flag {
 			Usage:   "get changelog from last 'n' tags",
 		},
 		&cli.BoolFlag{
-			Name:  "all",
-			Usage: "ignore size parameter, get changelog for every tag",
+			Name:        "all",
+			Usage:       "ignore size parameter, get changelog for every tag",
+			Destination: &settings.All,
 		},
 		&cli.BoolFlag{
-			Name:  "add-next-version",
-			Usage: "add next version on change log (commits since last tag, but only if there is a new version to release)",
+			Name:        "add-next",
+			Usage:       "add next version on change log (commits since last tag, only if there is a new release)",
+			Destination: &settings.AddNext,
 		},
 		&cli.BoolFlag{
-			Name:  "semantic-version-only",
-			Usage: "only show tags 'SemVer-ish'",
+			Name:        "strict",
+			Usage:       "only show tags 'SemVer-ish'",
+			Destination: &settings.Strict,
+		},
+		&cli.StringFlag{
+			Name:        "o",
+			Aliases:     []string{"output"},
+			Usage:       "output file name. Omit to use standard output.",
+			Destination: &settings.Out,
 		},
 	}
 }
 
-func ChangelogHandler(
-	g app.GitSV,
-) cli.ActionFunc {
+//nolint:gocognit
+func ChangelogHandler(g app.GitSV) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		tags, err := g.Tags()
 		if err != nil {
@@ -47,12 +56,7 @@ func ChangelogHandler(
 
 		var releaseNotes []sv.ReleaseNote
 
-		size := c.Int("size")
-		all := c.Bool("all")
-		addNextVersion := c.Bool("add-next-version")
-		semanticVersionOnly := c.Bool("semantic-version-only")
-
-		if addNextVersion {
+		if g.Settings.ChangelogSettings.AddNext {
 			rnVersion, updated, date, commits, uerr := getNextVersionInfo(g, g.CommitProcessor)
 			if uerr != nil {
 				return uerr
@@ -64,7 +68,7 @@ func ChangelogHandler(
 		}
 
 		for i, tag := range tags {
-			if !all && i >= size {
+			if !g.Settings.ChangelogSettings.All && i >= g.Settings.ChangelogSettings.Size {
 				break
 			}
 
@@ -73,13 +77,13 @@ func ChangelogHandler(
 				previousTag = tags[i+1].Name
 			}
 
-			if semanticVersionOnly && !sv.IsValidVersion(tag.Name) {
+			if g.Settings.ChangelogSettings.Strict && !sv.IsValidVersion(tag.Name) {
 				continue
 			}
 
 			commits, err := g.Log(app.NewLogRange(app.TagRange, previousTag, tag.Name))
 			if err != nil {
-				return fmt.Errorf("error getting git log from tag: %s, message: %w", tag.Name, err)
+				return fmt.Errorf("error getting git log from tag: %s: %w", tag.Name, err)
 			}
 
 			currentVer, _ := sv.ToVersion(tag.Name)
@@ -88,10 +92,24 @@ func ChangelogHandler(
 
 		output, err := g.OutputFormatter.FormatChangelog(releaseNotes)
 		if err != nil {
-			return fmt.Errorf("could not format changelog, message: %w", err)
+			return fmt.Errorf("could not format changelog: %w", err)
 		}
 
-		fmt.Println(output)
+		if g.Settings.ChangelogSettings.Out == "" {
+			os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
+
+			return nil
+		}
+
+		w, err := os.Create(g.Settings.ChangelogSettings.Out)
+		if err != nil {
+			return fmt.Errorf("could not write changelog: %w", err)
+		}
+		defer w.Close()
+
+		if _, err := w.Write(output); err != nil {
+			return err
+		}
 
 		return nil
 	}

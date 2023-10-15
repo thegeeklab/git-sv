@@ -100,7 +100,7 @@ func CommitHandler(g app.GitSV) cli.ActionFunc {
 
 		err = g.Commit(header, body, footer)
 		if err != nil {
-			return fmt.Errorf("error executing git commit, message: %w", err)
+			return fmt.Errorf("error executing git commit: %w", err)
 		}
 
 		return nil

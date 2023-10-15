@@ -56,7 +56,7 @@ func TestBaseOutputFormatter_FormatReleaseNote(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewOutputFormatter(tmpls).FormatReleaseNote(tt.input)
-			if got != tt.want {
+			if string(got) != tt.want {
 				t.Errorf("BaseOutputFormatter.FormatReleaseNote() = %v, want %v", got, tt.want)
 			}
 

@@ -14,12 +14,12 @@ func TagHandler(g app.GitSV) cli.ActionFunc {
 
 		currentVer, err := sv.ToVersion(lastTag)
 		if err != nil {
-			return fmt.Errorf("error parsing version: %s from git tag, message: %w", lastTag, err)
+			return fmt.Errorf("error parsing version: %s from git tag: %w", lastTag, err)
 		}
 
 		commits, err := g.Log(app.NewLogRange(app.TagRange, lastTag, ""))
 		if err != nil {
-			return fmt.Errorf("error getting git log, message: %w", err)
+			return fmt.Errorf("error getting git log: %w", err)
 		}
 
 		nextVer, _ := g.CommitProcessor.NextVersion(currentVer, commits)
@@ -28,7 +28,7 @@ func TagHandler(g app.GitSV) cli.ActionFunc {
 		fmt.Println(tagname)
 
 		if err != nil {
-			return fmt.Errorf("error generating tag version: %s, message: %w", nextVer.String(), err)
+			return fmt.Errorf("error generating tag version: %s: %w", nextVer.String(), err)
 		}
 
 		return nil

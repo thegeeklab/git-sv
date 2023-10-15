@@ -83,12 +83,12 @@ func getTagVersionInfo(gsv app.GitSV, tag string) (*semver.Version, time.Time, [
 
 	previousTag, currentTag, err := getTags(gsv, tag)
 	if err != nil {
-		return nil, time.Time{}, nil, fmt.Errorf("error listing tags, message: %w", err)
+		return nil, time.Time{}, nil, fmt.Errorf("error listing tags: %w", err)
 	}
 
 	commits, err := gsv.Log(app.NewLogRange(app.TagRange, previousTag, tag))
 	if err != nil {
-		return nil, time.Time{}, nil, fmt.Errorf("error getting git log from tag: %s, message: %w", tag, err)
+		return nil, time.Time{}, nil, fmt.Errorf("error getting git log from tag: %s: %w", tag, err)
 	}
 
 	return tagVersion, currentTag.Date, commits, nil
@@ -101,7 +101,7 @@ func getNextVersionInfo(
 
 	commits, err := gsv.Log(app.NewLogRange(app.TagRange, lastTag, ""))
 	if err != nil {
-		return nil, false, time.Time{}, nil, fmt.Errorf("error getting git log, message: %w", err)
+		return nil, false, time.Time{}, nil, fmt.Errorf("error getting git log: %w", err)
 	}
 
 	currentVer, _ := sv.ToVersion(lastTag)

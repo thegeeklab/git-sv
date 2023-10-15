@@ -69,7 +69,7 @@ func CommitLogHandler(g app.GitSV) cli.ActionFunc {
 		}
 
 		if err != nil {
-			return fmt.Errorf("error getting git log, message: %w", err)
+			return fmt.Errorf("error getting git log: %w", err)
 		}
 
 		for _, commit := range commits {
