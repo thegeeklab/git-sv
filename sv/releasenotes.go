@@ -6,27 +6,57 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-// ReleaseNoteProcessor release note processor interface.
-type ReleaseNoteProcessor interface {
-	Create(version *semver.Version, tag string, date time.Time, commits []GitCommitLog) ReleaseNote
+// ReleaseNotesConfig release notes preferences.
+type ReleaseNotesConfig struct {
+	Headers  map[string]string           `yaml:"headers,omitempty"`
+	Sections []ReleaseNotesSectionConfig `yaml:"sections"`
 }
 
-// ReleaseNoteProcessorImpl release note based on commit log.
-type ReleaseNoteProcessorImpl struct {
+func (cfg ReleaseNotesConfig) sectionConfig(sectionType string) *ReleaseNotesSectionConfig {
+	for _, sectionCfg := range cfg.Sections {
+		if sectionCfg.SectionType == sectionType {
+			return &sectionCfg
+		}
+	}
+
+	return nil
+}
+
+// ReleaseNotesSectionConfig preferences for a single section on release notes.
+type ReleaseNotesSectionConfig struct {
+	Name        string   `yaml:"name"`
+	SectionType string   `yaml:"section-type"`
+	CommitTypes []string `yaml:"commit-types,flow,omitempty"`
+}
+
+const (
+	// ReleaseNotesSectionTypeCommits ReleaseNotesSectionConfig.SectionType value.
+	ReleaseNotesSectionTypeCommits = "commits"
+	// ReleaseNotesSectionTypeBreakingChanges ReleaseNotesSectionConfig.SectionType value.
+	ReleaseNotesSectionTypeBreakingChanges = "breaking-changes"
+)
+
+// ReleaseNoteProcessor release note processor interface.
+type ReleaseNoteProcessor interface {
+	Create(version *semver.Version, tag string, date time.Time, commits []CommitLog) ReleaseNote
+}
+
+// BaseReleaseNoteProcessor release note based on commit log.
+type BaseReleaseNoteProcessor struct {
 	cfg ReleaseNotesConfig
 }
 
 // NewReleaseNoteProcessor ReleaseNoteProcessor constructor.
-func NewReleaseNoteProcessor(cfg ReleaseNotesConfig) *ReleaseNoteProcessorImpl {
-	return &ReleaseNoteProcessorImpl{cfg: cfg}
+func NewReleaseNoteProcessor(cfg ReleaseNotesConfig) *BaseReleaseNoteProcessor {
+	return &BaseReleaseNoteProcessor{cfg: cfg}
 }
 
 // Create create a release note based on commits.
-func (p ReleaseNoteProcessorImpl) Create(
+func (p BaseReleaseNoteProcessor) Create(
 	version *semver.Version,
 	tag string,
 	date time.Time,
-	commits []GitCommitLog,
+	commits []CommitLog,
 ) ReleaseNote {
 	mapping := commitSectionMapping(p.cfg.Sections)
 
@@ -68,7 +98,7 @@ func (p ReleaseNoteProcessorImpl) Create(
 	}
 }
 
-func (p ReleaseNoteProcessorImpl) toReleaseNoteSections(
+func (p BaseReleaseNoteProcessor) toReleaseNoteSections(
 	commitSections map[string]ReleaseNoteCommitsSection,
 	breakingChange ReleaseNoteBreakingChangeSection,
 ) []ReleaseNoteSection {
@@ -144,7 +174,7 @@ func (s ReleaseNoteBreakingChangeSection) SectionName() string {
 type ReleaseNoteCommitsSection struct {
 	Name  string
 	Types []string
-	Items []GitCommitLog
+	Items []CommitLog
 }
 
 // SectionType section type.

@@ -1,14 +1,13 @@
-package sv
+package formatter
 
 import (
 	"bytes"
-	"io/fs"
-	"os"
 	"sort"
 	"text/template"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/thegeeklab/git-sv/v2/sv"
 )
 
 type releaseNoteTemplateVariables struct {
@@ -16,35 +15,28 @@ type releaseNoteTemplateVariables struct {
 	Tag         string
 	Version     *semver.Version
 	Date        time.Time
-	Sections    []ReleaseNoteSection
+	Sections    []sv.ReleaseNoteSection
 	AuthorNames []string
 }
 
 // OutputFormatter output formatter interface.
 type OutputFormatter interface {
-	FormatReleaseNote(releasenote ReleaseNote) (string, error)
-	FormatChangelog(releasenotes []ReleaseNote) (string, error)
+	FormatReleaseNote(releasenote sv.ReleaseNote) (string, error)
+	FormatChangelog(releasenotes []sv.ReleaseNote) (string, error)
 }
 
-// OutputFormatterImpl formater for release note and changelog.
-type OutputFormatterImpl struct {
+// BaseOutputFormatter formater for release note and changelog.
+type BaseOutputFormatter struct {
 	templates *template.Template
 }
 
 // NewOutputFormatter TemplateProcessor constructor.
-func NewOutputFormatter(templatesFS fs.FS) *OutputFormatterImpl {
-	templateFNs := map[string]interface{}{
-		"timefmt":    timeFormat,
-		"getsection": getSection,
-		"getenv":     os.Getenv,
-	}
-	tpls := template.Must(template.New("templates").Funcs(templateFNs).ParseFS(templatesFS, "*"))
-
-	return &OutputFormatterImpl{templates: tpls}
+func NewOutputFormatter(tpls *template.Template) *BaseOutputFormatter {
+	return &BaseOutputFormatter{templates: tpls}
 }
 
 // FormatReleaseNote format a release note.
-func (p OutputFormatterImpl) FormatReleaseNote(releasenote ReleaseNote) (string, error) {
+func (p BaseOutputFormatter) FormatReleaseNote(releasenote sv.ReleaseNote) (string, error) {
 	var b bytes.Buffer
 	if err := p.templates.ExecuteTemplate(&b, "releasenotes-md.tpl", releaseNoteVariables(releasenote)); err != nil {
 		return "", err
@@ -54,7 +46,7 @@ func (p OutputFormatterImpl) FormatReleaseNote(releasenote ReleaseNote) (string,
 }
 
 // FormatChangelog format a changelog.
-func (p OutputFormatterImpl) FormatChangelog(releasenotes []ReleaseNote) (string, error) {
+func (p BaseOutputFormatter) FormatChangelog(releasenotes []sv.ReleaseNote) (string, error) {
 	templateVars := make([]releaseNoteTemplateVariables, len(releasenotes))
 	for i, v := range releasenotes {
 		templateVars[i] = releaseNoteVariables(v)
@@ -68,7 +60,7 @@ func (p OutputFormatterImpl) FormatChangelog(releasenotes []ReleaseNote) (string
 	return b.String(), nil
 }
 
-func releaseNoteVariables(releasenote ReleaseNote) releaseNoteTemplateVariables {
+func releaseNoteVariables(releasenote sv.ReleaseNote) releaseNoteTemplateVariables {
 	release := releasenote.Tag
 	if releasenote.Version != nil {
 		release = "v" + releasenote.Version.String()

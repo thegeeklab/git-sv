@@ -1,13 +1,14 @@
-package main
+package app
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"dario.cat/mergo"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/v2/sv"
 	"gopkg.in/yaml.v3"
 )
@@ -17,28 +18,57 @@ type EnvConfig struct {
 	Home string `envconfig:"GITSV_HOME" default:""`
 }
 
-func loadEnvConfig() EnvConfig {
-	var c EnvConfig
-
-	err := envconfig.Process("", &c)
-	if err != nil {
-		log.Fatal("failed to load env config, error: ", err.Error())
-	}
-
-	return c
-}
-
 // Config cli yaml config.
 type Config struct {
 	Version       string                 `yaml:"version"`
+	LogLevel      string                 `yaml:"log-level"`
 	Versioning    sv.VersioningConfig    `yaml:"versioning"`
-	Tag           sv.TagConfig           `yaml:"tag"`
+	Tag           TagConfig              `yaml:"tag"`
 	ReleaseNotes  sv.ReleaseNotesConfig  `yaml:"release-notes"`
 	Branches      sv.BranchesConfig      `yaml:"branches"`
 	CommitMessage sv.CommitMessageConfig `yaml:"commit-message"`
 }
 
-func readConfig(filepath string) (Config, error) {
+func NewConfig(configDir, configFilename string) *Config {
+	workDir, _ := os.Getwd()
+	cfg := GetDefault()
+
+	envCfg := loadEnv()
+	if envCfg.Home != "" {
+		homeCfgFilepath := filepath.Join(envCfg.Home, configFilename)
+		if homeCfg, err := readFile(homeCfgFilepath); err == nil {
+			if merr := merge(cfg, migrate(homeCfg, homeCfgFilepath)); merr != nil {
+				log.Fatal().Err(merr).Msg("failed to merge user config")
+			}
+		}
+	}
+
+	repoCfgFilepath := filepath.Join(workDir, configDir, configFilename)
+	if repoCfg, err := readFile(repoCfgFilepath); err == nil {
+		if merr := merge(cfg, migrate(repoCfg, repoCfgFilepath)); merr != nil {
+			log.Fatal().Err(merr).Msg("failed to merge repo config")
+		}
+
+		if len(repoCfg.ReleaseNotes.Headers) > 0 { // mergo is merging maps, headers will be overwritten
+			cfg.ReleaseNotes.Headers = repoCfg.ReleaseNotes.Headers
+		}
+	}
+
+	return cfg
+}
+
+func loadEnv() EnvConfig {
+	var c EnvConfig
+
+	err := envconfig.Process("", &c)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load env config")
+	}
+
+	return c
+}
+
+func readFile(filepath string) (Config, error) {
 	content, rerr := os.ReadFile(filepath)
 	if rerr != nil {
 		return Config{}, rerr
@@ -54,12 +84,12 @@ func readConfig(filepath string) (Config, error) {
 	return cfg, nil
 }
 
-func defaultConfig() Config {
+func GetDefault() *Config {
 	skipDetached := false
 	pattern := "%d.%d.%d"
 	filter := ""
 
-	return Config{
+	return &Config{
 		Version: "1.1",
 		Versioning: sv.VersioningConfig{
 			UpdateMajor:   []string{},
@@ -67,7 +97,7 @@ func defaultConfig() Config {
 			UpdatePatch:   []string{"build", "ci", "chore", "docs", "fix", "perf", "refactor", "style", "test"},
 			IgnoreUnknown: false,
 		},
-		Tag: sv.TagConfig{
+		Tag: TagConfig{
 			Pattern: &pattern,
 			Filter:  &filter,
 		},
@@ -134,26 +164,26 @@ func (t *mergeTransformer) Transformer(typ reflect.Type) func(dst, src reflect.V
 	return nil
 }
 
-func migrateConfig(cfg Config, filename string) Config {
+func migrate(cfg Config, filename string) Config {
 	if cfg.ReleaseNotes.Headers == nil {
 		return cfg
 	}
 
-	warnf("config 'release-notes.headers' on %s is deprecated, please use 'sections' instead!", filename)
+	log.Warn().Msgf("config 'release-notes.headers' on %s is deprecated, please use 'sections' instead!", filename)
 
 	return Config{
 		Version:    cfg.Version,
 		Versioning: cfg.Versioning,
 		Tag:        cfg.Tag,
 		ReleaseNotes: sv.ReleaseNotesConfig{
-			Sections: migrateReleaseNotesConfig(cfg.ReleaseNotes.Headers),
+			Sections: migrateReleaseNotes(cfg.ReleaseNotes.Headers),
 		},
 		Branches:      cfg.Branches,
 		CommitMessage: cfg.CommitMessage,
 	}
 }
 
-func migrateReleaseNotesConfig(headers map[string]string) []sv.ReleaseNotesSectionConfig {
+func migrateReleaseNotes(headers map[string]string) []sv.ReleaseNotesSectionConfig {
 	order := []string{"feat", "fix", "refactor", "perf", "test", "build", "ci", "chore", "docs", "style"}
 
 	var sections []sv.ReleaseNotesSectionConfig
@@ -180,4 +210,20 @@ func migrateReleaseNotesConfig(headers map[string]string) []sv.ReleaseNotesSecti
 	}
 
 	return sections
+}
+
+// ==== Message ====
+
+// CommitMessageConfig config a commit message.
+
+// ==== Branches ====
+
+// ==== Versioning ====
+
+// ==== Tag ====
+
+// TagConfig tag preferences.
+type TagConfig struct {
+	Pattern *string `yaml:"pattern"`
+	Filter  *string `yaml:"filter"`
 }

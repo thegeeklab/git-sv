@@ -2,16 +2,24 @@ package sv
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 )
 
 const (
-	breakingChangeFooterKey   = "BREAKING CHANGE"
-	breakingChangeMetadataKey = "breaking-change"
-	issueMetadataKey          = "issue"
-	messageRegexGroupName     = "header"
+	BreakingChangeFooterKey   = "BREAKING CHANGE"
+	BreakingChangeMetadataKey = "breaking-change"
+	IssueMetadataKey          = "issue"
+	MessageRegexGroupName     = "header"
+)
+
+var (
+	errInvalidCommitMessage = errors.New("commit message not valid")
+	errIssueIDNotFound      = errors.New("could not find issue id using configured regex")
+	errInvalidIssueRegex    = errors.New("could not compile issue regex")
+	errInvalidHeaderRegex   = errors.New("invalid regex on header-selector")
 )
 
 // CommitMessage is a message using conventional commits.
@@ -24,15 +32,59 @@ type CommitMessage struct {
 	Metadata         map[string]string `json:"metadata,omitempty"`
 }
 
+type CommitMessageConfig struct {
+	Types          []string                             `yaml:"types,flow"`
+	HeaderSelector string                               `yaml:"header-selector"`
+	Scope          CommitMessageScopeConfig             `yaml:"scope"`
+	Footer         map[string]CommitMessageFooterConfig `yaml:"footer"`
+	Issue          CommitMessageIssueConfig             `yaml:"issue"`
+}
+
+// IssueFooterConfig config for issue.
+func (c CommitMessageConfig) IssueFooterConfig() CommitMessageFooterConfig {
+	if v, exists := c.Footer[IssueMetadataKey]; exists {
+		return v
+	}
+
+	return CommitMessageFooterConfig{}
+}
+
+// CommitMessageScopeConfig config scope preferences.
+type CommitMessageScopeConfig struct {
+	Values []string `yaml:"values"`
+}
+
+// CommitMessageFooterConfig config footer metadata.
+type CommitMessageFooterConfig struct {
+	Key            string   `yaml:"key"`
+	KeySynonyms    []string `yaml:"key-synonyms,flow"`
+	UseHash        bool     `yaml:"use-hash"`
+	AddValuePrefix string   `yaml:"add-value-prefix"`
+}
+
+// CommitMessageIssueConfig issue preferences.
+type CommitMessageIssueConfig struct {
+	Regex string `yaml:"regex"`
+}
+
+// BranchesConfig branches preferences.
+type BranchesConfig struct {
+	Prefix       string   `yaml:"prefix"`
+	Suffix       string   `yaml:"suffix"`
+	DisableIssue bool     `yaml:"disable-issue"`
+	Skip         []string `yaml:"skip,flow"`
+	SkipDetached *bool    `yaml:"skip-detached"`
+}
+
 // NewCommitMessage commit message constructor.
 func NewCommitMessage(ctype, scope, description, body, issue, breakingChanges string) CommitMessage {
 	metadata := make(map[string]string)
 	if issue != "" {
-		metadata[issueMetadataKey] = issue
+		metadata[IssueMetadataKey] = issue
 	}
 
 	if breakingChanges != "" {
-		metadata[breakingChangeMetadataKey] = breakingChanges
+		metadata[BreakingChangeMetadataKey] = breakingChanges
 	}
 
 	return CommitMessage{
@@ -47,12 +99,12 @@ func NewCommitMessage(ctype, scope, description, body, issue, breakingChanges st
 
 // Issue return issue from metadata.
 func (m CommitMessage) Issue() string {
-	return m.Metadata[issueMetadataKey]
+	return m.Metadata[IssueMetadataKey]
 }
 
 // BreakingMessage return breaking change message from metadata.
 func (m CommitMessage) BreakingMessage() string {
-	return m.Metadata[breakingChangeMetadataKey]
+	return m.Metadata[BreakingChangeMetadataKey]
 }
 
 // MessageProcessor interface.
@@ -68,28 +120,28 @@ type MessageProcessor interface {
 	Parse(subject, body string) (CommitMessage, error)
 }
 
-// NewMessageProcessor MessageProcessorImpl constructor.
-func NewMessageProcessor(mcfg CommitMessageConfig, bcfg BranchesConfig) *MessageProcessorImpl {
-	return &MessageProcessorImpl{
+// NewMessageProcessor BaseMessageProcessor constructor.
+func NewMessageProcessor(mcfg CommitMessageConfig, bcfg BranchesConfig) *BaseMessageProcessor {
+	return &BaseMessageProcessor{
 		messageCfg:  mcfg,
 		branchesCfg: bcfg,
 	}
 }
 
-// MessageProcessorImpl process validate message hook.
-type MessageProcessorImpl struct {
+// BaseMessageProcessor process validate message hook.
+type BaseMessageProcessor struct {
 	messageCfg  CommitMessageConfig
 	branchesCfg BranchesConfig
 }
 
 // SkipBranch check if branch should be ignored.
-func (p MessageProcessorImpl) SkipBranch(branch string, detached bool) bool {
+func (p BaseMessageProcessor) SkipBranch(branch string, detached bool) bool {
 	return contains(branch, p.branchesCfg.Skip) ||
 		(p.branchesCfg.SkipDetached != nil && *p.branchesCfg.SkipDetached && detached)
 }
 
 // Validate commit message.
-func (p MessageProcessorImpl) Validate(message string) error {
+func (p BaseMessageProcessor) Validate(message string) error {
 	subject, body := splitCommitMessageContent(message)
 	msg, parseErr := p.Parse(subject, body)
 
@@ -113,7 +165,7 @@ func (p MessageProcessorImpl) Validate(message string) error {
 }
 
 // ValidateType check if commit type is valid.
-func (p MessageProcessorImpl) ValidateType(ctype string) error {
+func (p BaseMessageProcessor) ValidateType(ctype string) error {
 	if ctype == "" || !contains(ctype, p.messageCfg.Types) {
 		return fmt.Errorf(
 			"%w: type must be one of [%s]",
@@ -126,7 +178,7 @@ func (p MessageProcessorImpl) ValidateType(ctype string) error {
 }
 
 // ValidateScope check if commit scope is valid.
-func (p MessageProcessorImpl) ValidateScope(scope string) error {
+func (p BaseMessageProcessor) ValidateScope(scope string) error {
 	if len(p.messageCfg.Scope.Values) > 0 && !contains(scope, p.messageCfg.Scope.Values) {
 		return fmt.Errorf(
 			"%w: scope must one of [%s]",
@@ -139,7 +191,7 @@ func (p MessageProcessorImpl) ValidateScope(scope string) error {
 }
 
 // ValidateDescription check if commit description is valid.
-func (p MessageProcessorImpl) ValidateDescription(description string) error {
+func (p BaseMessageProcessor) ValidateDescription(description string) error {
 	if !regexp.MustCompile("^[a-z]+.*$").MatchString(description) {
 		return fmt.Errorf("%w: description [%s] must start with lowercase", errInvalidCommitMessage, description)
 	}
@@ -148,7 +200,7 @@ func (p MessageProcessorImpl) ValidateDescription(description string) error {
 }
 
 // Enhance add metadata on commit message.
-func (p MessageProcessorImpl) Enhance(branch, message string) (string, error) {
+func (p BaseMessageProcessor) Enhance(branch, message string) (string, error) {
 	if p.branchesCfg.DisableIssue || p.messageCfg.IssueFooterConfig().Key == "" ||
 		hasIssueID(message, p.messageCfg.IssueFooterConfig()) {
 		return "", nil // enhance disabled
@@ -184,7 +236,7 @@ func formatIssueFooter(cfg CommitMessageFooterConfig, issue string) string {
 }
 
 // IssueID try to extract issue id from branch, return empty if not found.
-func (p MessageProcessorImpl) IssueID(branch string) (string, error) {
+func (p BaseMessageProcessor) IssueID(branch string) (string, error) {
 	if p.branchesCfg.DisableIssue || p.messageCfg.Issue.Regex == "" {
 		return "", nil
 	}
@@ -205,7 +257,7 @@ func (p MessageProcessorImpl) IssueID(branch string) (string, error) {
 }
 
 // Format a commit message returning header, body and footer.
-func (p MessageProcessorImpl) Format(msg CommitMessage) (string, string, string) {
+func (p BaseMessageProcessor) Format(msg CommitMessage) (string, string, string) {
 	var header strings.Builder
 
 	header.WriteString(msg.Type)
@@ -219,10 +271,10 @@ func (p MessageProcessorImpl) Format(msg CommitMessage) (string, string, string)
 
 	var footer strings.Builder
 	if msg.BreakingMessage() != "" {
-		footer.WriteString(fmt.Sprintf("%s: %s", breakingChangeFooterKey, msg.BreakingMessage()))
+		footer.WriteString(fmt.Sprintf("%s: %s", BreakingChangeFooterKey, msg.BreakingMessage()))
 	}
 
-	if issue, exists := msg.Metadata[issueMetadataKey]; exists && p.messageCfg.IssueFooterConfig().Key != "" {
+	if issue, exists := msg.Metadata[IssueMetadataKey]; exists && p.messageCfg.IssueFooterConfig().Key != "" {
 		if footer.Len() > 0 {
 			footer.WriteString("\n")
 		}
@@ -238,7 +290,7 @@ func removeCarriage(commit string) string {
 }
 
 // Parse a commit message.
-func (p MessageProcessorImpl) Parse(subject, body string) (CommitMessage, error) {
+func (p BaseMessageProcessor) Parse(subject, body string) (CommitMessage, error) {
 	preparedSubject, err := p.prepareHeader(subject)
 	commitBody := removeCarriage(body)
 
@@ -263,8 +315,8 @@ func (p MessageProcessorImpl) Parse(subject, body string) (CommitMessage, error)
 		}
 	}
 
-	if tagValue := extractFooterMetadata(breakingChangeFooterKey, commitBody, false); tagValue != "" {
-		metadata[breakingChangeMetadataKey] = tagValue
+	if tagValue := extractFooterMetadata(BreakingChangeFooterKey, commitBody, false); tagValue != "" {
+		metadata[BreakingChangeMetadataKey] = tagValue
 		hasBreakingChange = true
 	}
 
@@ -278,7 +330,7 @@ func (p MessageProcessorImpl) Parse(subject, body string) (CommitMessage, error)
 	}, nil
 }
 
-func (p MessageProcessorImpl) prepareHeader(header string) (string, error) {
+func (p BaseMessageProcessor) prepareHeader(header string) (string, error) {
 	if p.messageCfg.HeaderSelector == "" {
 		return header, nil
 	}
@@ -288,9 +340,9 @@ func (p MessageProcessorImpl) prepareHeader(header string) (string, error) {
 		return "", fmt.Errorf("%w: %s: %s", errInvalidHeaderRegex, p.messageCfg.HeaderSelector, err.Error())
 	}
 
-	index := regex.SubexpIndex(messageRegexGroupName)
+	index := regex.SubexpIndex(MessageRegexGroupName)
 	if index < 0 {
-		return "", fmt.Errorf("%w: could not find group %s", errInvalidHeaderRegex, messageRegexGroupName)
+		return "", fmt.Errorf("%w: could not find group %s", errInvalidHeaderRegex, MessageRegexGroupName)
 	}
 
 	match := regex.FindStringSubmatch(header)
@@ -299,7 +351,7 @@ func (p MessageProcessorImpl) prepareHeader(header string) (string, error) {
 		return "", fmt.Errorf(
 			"%w: could not find group %s in match result for '%s'",
 			errInvalidHeaderRegex,
-			messageRegexGroupName,
+			MessageRegexGroupName,
 			header,
 		)
 	}
@@ -335,7 +387,7 @@ func extractFooterMetadata(key, text string, useHash bool) string {
 }
 
 func hasFooter(message string) bool {
-	r := regexp.MustCompile("^[a-zA-Z-]+: .*|^[a-zA-Z-]+ #.*|^" + breakingChangeFooterKey + ": .*")
+	r := regexp.MustCompile("^[a-zA-Z-]+: .*|^[a-zA-Z-]+ #.*|^" + BreakingChangeFooterKey + ": .*")
 
 	scanner := bufio.NewScanner(strings.NewReader(message))
 	lines := 0

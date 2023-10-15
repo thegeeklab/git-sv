@@ -6,19 +6,19 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-func version(v string) *semver.Version {
+func TestVersion(v string) *semver.Version {
 	r, _ := semver.NewVersion(v)
 
 	return r
 }
 
-func commitlog(ctype string, metadata map[string]string, author string) GitCommitLog {
+func TestCommitlog(ctype string, metadata map[string]string, author string) CommitLog {
 	breaking := false
-	if _, found := metadata[breakingChangeMetadataKey]; found {
+	if _, found := metadata[BreakingChangeMetadataKey]; found {
 		breaking = true
 	}
 
-	return GitCommitLog{
+	return CommitLog{
 		Message: CommitMessage{
 			Type:             ctype,
 			Description:      "subject text",
@@ -29,7 +29,7 @@ func commitlog(ctype string, metadata map[string]string, author string) GitCommi
 	}
 }
 
-func releaseNote(
+func TestReleaseNote(
 	version *semver.Version,
 	tag string,
 	date time.Time,
@@ -45,7 +45,7 @@ func releaseNote(
 	}
 }
 
-func newReleaseNoteCommitsSection(name string, types []string, items []GitCommitLog) ReleaseNoteCommitsSection {
+func TestNewReleaseNoteCommitsSection(name string, types []string, items []CommitLog) ReleaseNoteCommitsSection {
 	return ReleaseNoteCommitsSection{
 		Name:  name,
 		Types: types,

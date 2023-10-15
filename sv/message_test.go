@@ -115,7 +115,7 @@ BREAKING CHANGE: refactor to use JavaScript features not available in Node 6.`
 
 // multiline samples end
 
-func TestMessageProcessorImpl_SkipBranch(t *testing.T) {
+func TestBaseMessageProcessor_SkipBranch(t *testing.T) {
 	tests := []struct {
 		name     string
 		bcfg     BranchesConfig
@@ -133,13 +133,13 @@ func TestMessageProcessorImpl_SkipBranch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(ccfg, tt.bcfg)
 			if got := p.SkipBranch(tt.branch, tt.detached); got != tt.want {
-				t.Errorf("MessageProcessorImpl.SkipBranch() = %v, want %v", got, tt.want)
+				t.Errorf("BaseMessageProcessor.SkipBranch() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestMessageProcessorImpl_Validate(t *testing.T) {
+func TestBaseMessageProcessor_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -200,13 +200,13 @@ func TestMessageProcessorImpl_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
 			if err := p.Validate(tt.message); (err != nil) != tt.wantErr {
-				t.Errorf("MessageProcessorImpl.Validate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BaseMessageProcessor.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestMessageProcessorImpl_ValidateType(t *testing.T) {
+func TestBaseMessageProcessor_ValidateType(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -233,13 +233,13 @@ func TestMessageProcessorImpl_ValidateType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
 			if err := p.ValidateType(tt.ctype); (err != nil) != tt.wantErr {
-				t.Errorf("MessageProcessorImpl.ValidateType() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BaseMessageProcessor.ValidateType() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestMessageProcessorImpl_ValidateScope(t *testing.T) {
+func TestBaseMessageProcessor_ValidateScope(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -258,13 +258,13 @@ func TestMessageProcessorImpl_ValidateScope(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
 			if err := p.ValidateScope(tt.scope); (err != nil) != tt.wantErr {
-				t.Errorf("MessageProcessorImpl.ValidateScope() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BaseMessageProcessor.ValidateScope() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestMessageProcessorImpl_ValidateDescription(t *testing.T) {
+func TestBaseMessageProcessor_ValidateDescription(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         CommitMessageConfig
@@ -301,13 +301,13 @@ func TestMessageProcessorImpl_ValidateDescription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
 			if err := p.ValidateDescription(tt.description); (err != nil) != tt.wantErr {
-				t.Errorf("MessageProcessorImpl.ValidateDescription() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BaseMessageProcessor.ValidateDescription() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestMessageProcessorImpl_Enhance(t *testing.T) {
+func TestBaseMessageProcessor_Enhance(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -381,18 +381,18 @@ func TestMessageProcessorImpl_Enhance(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Enhance(tt.branch, tt.message)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("MessageProcessorImpl.Enhance() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BaseMessageProcessor.Enhance() error = %v, wantErr %v", err, tt.wantErr)
 
 				return
 			}
 			if got != tt.want {
-				t.Errorf("MessageProcessorImpl.Enhance() = %v, want %v", got, tt.want)
+				t.Errorf("BaseMessageProcessor.Enhance() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestMessageProcessorImpl_IssueID(t *testing.T) {
+func TestBaseMessageProcessor_IssueID(t *testing.T) {
 	p := NewMessageProcessor(ccfg, newBranchCfg(false))
 
 	tests := []struct {
@@ -412,12 +412,12 @@ func TestMessageProcessorImpl_IssueID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := p.IssueID(tt.branch)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("MessageProcessorImpl.IssueID() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BaseMessageProcessor.IssueID() error = %v, wantErr %v", err, tt.wantErr)
 
 				return
 			}
 			if got != tt.want {
-				t.Errorf("MessageProcessorImpl.IssueID() = %v, want %v", got, tt.want)
+				t.Errorf("BaseMessageProcessor.IssueID() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -514,7 +514,7 @@ var hashMetadataBody = `some descriptions
 Jira: JIRA-999
 Refs #123`
 
-func TestMessageProcessorImpl_Parse(t *testing.T) {
+func TestBaseMessageProcessor_Parse(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -572,8 +572,8 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Body:             completeBody,
 				IsBreakingChange: true,
 				Metadata: map[string]string{
-					issueMetadataKey:          "JIRA-123",
-					breakingChangeMetadataKey: "this change breaks everything",
+					IssueMetadataKey:          "JIRA-123",
+					BreakingChangeMetadataKey: "this change breaks everything",
 				},
 			},
 		},
@@ -587,7 +587,7 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             issueOnlyBody,
 				IsBreakingChange: false,
-				Metadata:         map[string]string{issueMetadataKey: "JIRA-456"},
+				Metadata:         map[string]string{IssueMetadataKey: "JIRA-456"},
 			},
 		},
 		{
@@ -600,7 +600,7 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             issueSynonymsBody,
 				IsBreakingChange: false,
-				Metadata:         map[string]string{issueMetadataKey: "JIRA-789"},
+				Metadata:         map[string]string{IssueMetadataKey: "JIRA-789"},
 			},
 		},
 		{
@@ -626,7 +626,7 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             hashMetadataBody,
 				IsBreakingChange: false,
-				Metadata:         map[string]string{issueMetadataKey: "JIRA-999", "refs": "#123"},
+				Metadata:         map[string]string{IssueMetadataKey: "JIRA-999", "refs": "#123"},
 			},
 		},
 		{
@@ -652,7 +652,7 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             expectedBodyWithCarriage,
 				IsBreakingChange: false,
-				Metadata:         map[string]string{issueMetadataKey: "JIRA-123"},
+				Metadata:         map[string]string{IssueMetadataKey: "JIRA-123"},
 			},
 		},
 	}
@@ -661,13 +661,13 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 			if got, err := NewMessageProcessor(
 				tt.cfg, newBranchCfg(false),
 			).Parse(tt.subject, tt.body); !reflect.DeepEqual(got, tt.want) && err == nil {
-				t.Errorf("MessageProcessorImpl.Parse() = [%+v], want [%+v]", got, tt.want)
+				t.Errorf("BaseMessageProcessor.Parse() = [%+v], want [%+v]", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestMessageProcessorImpl_Format(t *testing.T) {
+func TestBaseMessageProcessor_Format(t *testing.T) {
 	tests := []struct {
 		name       string
 		cfg        CommitMessageConfig
@@ -777,13 +777,13 @@ func TestMessageProcessorImpl_Format(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, got2 := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Format(tt.msg)
 			if got != tt.wantHeader {
-				t.Errorf("MessageProcessorImpl.Format() header got = %v, want %v", got, tt.wantHeader)
+				t.Errorf("BaseMessageProcessor.Format() header got = %v, want %v", got, tt.wantHeader)
 			}
 			if got1 != tt.wantBody {
-				t.Errorf("MessageProcessorImpl.Format() body got = %v, want %v", got1, tt.wantBody)
+				t.Errorf("BaseMessageProcessor.Format() body got = %v, want %v", got1, tt.wantBody)
 			}
 			if got2 != tt.wantFooter {
-				t.Errorf("MessageProcessorImpl.Format() footer got = %v, want %v", got2, tt.wantFooter)
+				t.Errorf("BaseMessageProcessor.Format() footer got = %v, want %v", got2, tt.wantFooter)
 			}
 		})
 	}

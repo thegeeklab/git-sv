@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
+func TestBaseReleaseNoteProcessor_Create(t *testing.T) {
 	date := time.Now()
 
 	tests := []struct {
@@ -16,7 +16,7 @@ func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 		version *semver.Version
 		tag     string
 		date    time.Time
-		commits []GitCommitLog
+		commits []CommitLog
 		want    ReleaseNote
 	}{
 		{
@@ -24,13 +24,15 @@ func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 			version: semver.MustParse("1.0.0"),
 			tag:     "v1.0.0",
 			date:    date,
-			commits: []GitCommitLog{commitlog("t1", map[string]string{}, "a")},
-			want: releaseNote(
+			commits: []CommitLog{TestCommitlog("t1", map[string]string{}, "a")},
+			want: TestReleaseNote(
 				semver.MustParse("1.0.0"),
 				"v1.0.0",
 				date,
 				[]ReleaseNoteSection{
-					newReleaseNoteCommitsSection("Tag 1", []string{"t1"}, []GitCommitLog{commitlog("t1", map[string]string{}, "a")}),
+					TestNewReleaseNoteCommitsSection(
+						"Tag 1", []string{"t1"}, []CommitLog{TestCommitlog("t1", map[string]string{}, "a")},
+					),
 				},
 				map[string]struct{}{"a": {}},
 			),
@@ -40,13 +42,17 @@ func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 			version: semver.MustParse("1.0.0"),
 			tag:     "v1.0.0",
 			date:    date,
-			commits: []GitCommitLog{commitlog("t1", map[string]string{}, "a"), commitlog("unmapped", map[string]string{}, "a")},
-			want: releaseNote(
+			commits: []CommitLog{
+				TestCommitlog("t1", map[string]string{}, "a"), TestCommitlog("unmapped", map[string]string{}, "a"),
+			},
+			want: TestReleaseNote(
 				semver.MustParse("1.0.0"),
 				"v1.0.0",
 				date,
 				[]ReleaseNoteSection{
-					newReleaseNoteCommitsSection("Tag 1", []string{"t1"}, []GitCommitLog{commitlog("t1", map[string]string{}, "a")}),
+					TestNewReleaseNoteCommitsSection(
+						"Tag 1", []string{"t1"}, []CommitLog{TestCommitlog("t1", map[string]string{}, "a")},
+					),
 				},
 				map[string]struct{}{"a": {}},
 			),
@@ -56,16 +62,18 @@ func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 			version: semver.MustParse("1.0.0"),
 			tag:     "v1.0.0",
 			date:    date,
-			commits: []GitCommitLog{
-				commitlog("t1", map[string]string{}, "a"),
-				commitlog("unmapped", map[string]string{"breaking-change": "breaks"}, "a"),
+			commits: []CommitLog{
+				TestCommitlog("t1", map[string]string{}, "a"),
+				TestCommitlog("unmapped", map[string]string{"breaking-change": "breaks"}, "a"),
 			},
-			want: releaseNote(
+			want: TestReleaseNote(
 				semver.MustParse("1.0.0"),
 				"v1.0.0",
 				date,
 				[]ReleaseNoteSection{
-					newReleaseNoteCommitsSection("Tag 1", []string{"t1"}, []GitCommitLog{commitlog("t1", map[string]string{}, "a")}),
+					TestNewReleaseNoteCommitsSection(
+						"Tag 1", []string{"t1"}, []CommitLog{TestCommitlog("t1", map[string]string{}, "a")},
+					),
 					ReleaseNoteBreakingChangeSection{Name: "Breaking Changes", Messages: []string{"breaks"}},
 				},
 				map[string]struct{}{"a": {}},
@@ -76,20 +84,20 @@ func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 			version: semver.MustParse("1.0.0"),
 			tag:     "v1.0.0",
 			date:    date,
-			commits: []GitCommitLog{
-				commitlog("t1", map[string]string{}, "author3"),
-				commitlog("t1", map[string]string{}, "author2"),
-				commitlog("t1", map[string]string{}, "author1"),
+			commits: []CommitLog{
+				TestCommitlog("t1", map[string]string{}, "author3"),
+				TestCommitlog("t1", map[string]string{}, "author2"),
+				TestCommitlog("t1", map[string]string{}, "author1"),
 			},
-			want: releaseNote(
+			want: TestReleaseNote(
 				semver.MustParse("1.0.0"),
 				"v1.0.0",
 				date,
 				[]ReleaseNoteSection{
-					newReleaseNoteCommitsSection("Tag 1", []string{"t1"}, []GitCommitLog{
-						commitlog("t1", map[string]string{}, "author3"),
-						commitlog("t1", map[string]string{}, "author2"),
-						commitlog("t1", map[string]string{}, "author1"),
+					TestNewReleaseNoteCommitsSection("Tag 1", []string{"t1"}, []CommitLog{
+						TestCommitlog("t1", map[string]string{}, "author3"),
+						TestCommitlog("t1", map[string]string{}, "author2"),
+						TestCommitlog("t1", map[string]string{}, "author1"),
 					}),
 				},
 				map[string]struct{}{"author1": {}, "author2": {}, "author3": {}},
@@ -107,7 +115,7 @@ func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 					},
 				})
 			if got := p.Create(tt.version, tt.tag, tt.date, tt.commits); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ReleaseNoteProcessorImpl.Create() = %v, want %v", got, tt.want)
+				t.Errorf("BaseReleaseNoteProcessor.Create() = %v, want %v", got, tt.want)
 			}
 		})
 	}

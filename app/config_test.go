@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"reflect"
@@ -128,21 +128,21 @@ func Test_merge(t *testing.T) {
 			"overwrite tag config",
 			Config{
 				Version: "a",
-				Tag: sv.TagConfig{
+				Tag: TagConfig{
 					Pattern: &nonEmptyStr,
 					Filter:  &nonEmptyStr,
 				},
 			},
 			Config{
 				Version: "",
-				Tag: sv.TagConfig{
+				Tag: TagConfig{
 					Pattern: &emptyStr,
 					Filter:  &emptyStr,
 				},
 			},
 			Config{
 				Version: "a",
-				Tag: sv.TagConfig{
+				Tag: TagConfig{
 					Pattern: &emptyStr,
 					Filter:  &emptyStr,
 				},

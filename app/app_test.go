@@ -1,4 +1,4 @@
-package sv
+package app
 
 import (
 	"reflect"
@@ -10,19 +10,19 @@ func Test_parseTagsOutput(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    []GitTag
+		want    []Tag
 		wantErr bool
 	}{
 		{
 			"with date",
 			"2020-05-01 18:00:00 -0300#1.0.0",
-			[]GitTag{{Name: "1.0.0", Date: date("2020-05-01 18:00:00 -0300")}},
+			[]Tag{{Name: "1.0.0", Date: date("2020-05-01 18:00:00 -0300")}},
 			false,
 		},
 		{
 			"without date",
 			"#1.0.0",
-			[]GitTag{{Name: "1.0.0", Date: time.Time{}}},
+			[]Tag{{Name: "1.0.0", Date: time.Time{}}},
 			false,
 		},
 	}
