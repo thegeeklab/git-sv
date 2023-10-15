@@ -12,6 +12,34 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Settings struct {
+	LogLevel string
+
+	ChangelogSettings    ChangelogSettings
+	ReleaseNotesSettings ReleaseNotesSettings
+	CommitNotesSettings  CommitNotesSettings
+}
+
+type ChangelogSettings struct {
+	Size    int
+	All     bool
+	AddNext bool
+	Strict  bool
+	Out     string
+}
+
+type ReleaseNotesSettings struct {
+	Tag string
+	Out string
+}
+
+type CommitNotesSettings struct {
+	Range string
+	Start string
+	End   string
+	Out   string
+}
+
 // Config cli yaml config.
 type Config struct {
 	Version       string                 `yaml:"version"`
@@ -21,6 +49,12 @@ type Config struct {
 	ReleaseNotes  sv.ReleaseNotesConfig  `yaml:"release-notes"`
 	Branches      sv.BranchesConfig      `yaml:"branches"`
 	CommitMessage sv.CommitMessageConfig `yaml:"commit-message"`
+}
+
+// TagConfig tag preferences.
+type TagConfig struct {
+	Pattern *string `yaml:"pattern"`
+	Filter  *string `yaml:"filter"`
 }
 
 func NewConfig(configDir, configFilename string) *Config {
@@ -183,20 +217,4 @@ func migrateReleaseNotes(headers map[string]string) []sv.ReleaseNotesSectionConf
 	}
 
 	return sections
-}
-
-// ==== Message ====
-
-// CommitMessageConfig config a commit message.
-
-// ==== Branches ====
-
-// ==== Versioning ====
-
-// ==== Tag ====
-
-// TagConfig tag preferences.
-type TagConfig struct {
-	Pattern *string `yaml:"pattern"`
-	Filter  *string `yaml:"filter"`
 }

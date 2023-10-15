@@ -14,7 +14,7 @@ func CurrentVersionHandler(gsv app.GitSV) cli.ActionFunc {
 
 		currentVer, err := sv.ToVersion(lastTag)
 		if err != nil {
-			return fmt.Errorf("error parsing version: %s from git tag, message: %w", lastTag, err)
+			return fmt.Errorf("error parsing version: %s from git tag: %w", lastTag, err)
 		}
 
 		fmt.Printf("%d.%d.%d\n", currentVer.Major(), currentVer.Minor(), currentVer.Patch())

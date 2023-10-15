@@ -21,8 +21,8 @@ type releaseNoteTemplateVariables struct {
 
 // OutputFormatter output formatter interface.
 type OutputFormatter interface {
-	FormatReleaseNote(releasenote sv.ReleaseNote) (string, error)
-	FormatChangelog(releasenotes []sv.ReleaseNote) (string, error)
+	FormatReleaseNote(releasenote sv.ReleaseNote) ([]byte, error)
+	FormatChangelog(releasenotes []sv.ReleaseNote) ([]byte, error)
 }
 
 // BaseOutputFormatter formater for release note and changelog.
@@ -36,17 +36,17 @@ func NewOutputFormatter(tpls *template.Template) *BaseOutputFormatter {
 }
 
 // FormatReleaseNote format a release note.
-func (p BaseOutputFormatter) FormatReleaseNote(releasenote sv.ReleaseNote) (string, error) {
+func (p BaseOutputFormatter) FormatReleaseNote(releasenote sv.ReleaseNote) ([]byte, error) {
 	var b bytes.Buffer
 	if err := p.templates.ExecuteTemplate(&b, "releasenotes-md.tpl", releaseNoteVariables(releasenote)); err != nil {
-		return "", err
+		return b.Bytes(), err
 	}
 
-	return b.String(), nil
+	return b.Bytes(), nil
 }
 
 // FormatChangelog format a changelog.
-func (p BaseOutputFormatter) FormatChangelog(releasenotes []sv.ReleaseNote) (string, error) {
+func (p BaseOutputFormatter) FormatChangelog(releasenotes []sv.ReleaseNote) ([]byte, error) {
 	templateVars := make([]releaseNoteTemplateVariables, len(releasenotes))
 	for i, v := range releasenotes {
 		templateVars[i] = releaseNoteVariables(v)
@@ -54,10 +54,10 @@ func (p BaseOutputFormatter) FormatChangelog(releasenotes []sv.ReleaseNote) (str
 
 	var b bytes.Buffer
 	if err := p.templates.ExecuteTemplate(&b, "changelog-md.tpl", templateVars); err != nil {
-		return "", err
+		return b.Bytes(), err
 	}
 
-	return b.String(), nil
+	return b.Bytes(), nil
 }
 
 func releaseNoteVariables(releasenote sv.ReleaseNote) releaseNoteTemplateVariables {

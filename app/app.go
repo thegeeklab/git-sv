@@ -57,7 +57,8 @@ func NewLogRange(t LogRangeType, start, end string) LogRange {
 
 // Impl git command implementation.
 type GitSV struct {
-	Config *Config
+	Settings *Settings
+	Config   *Config
 
 	MessageProcessor      sv.MessageProcessor
 	CommitProcessor       sv.CommitProcessor
@@ -68,7 +69,8 @@ type GitSV struct {
 // New constructor.
 func New() GitSV {
 	g := GitSV{
-		Config: NewConfig(configDir, configFilename),
+		Settings: &Settings{},
+		Config:   NewConfig(configDir, configFilename),
 	}
 
 	g.MessageProcessor = sv.NewMessageProcessor(g.Config.CommitMessage, g.Config.Branches)
