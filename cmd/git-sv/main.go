@@ -1,14 +1,17 @@
 package main
 
 import (
-	"embed"
 	"fmt"
-	"io/fs"
-	"log"
 	"os"
-	"path/filepath"
 
-	"github.com/thegeeklab/git-sv/v2/sv"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
+	"github.com/thegeeklab/git-sv/v2/pkg/commands"
+	"github.com/thegeeklab/git-sv/v2/pkg/config"
+	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
+	"github.com/thegeeklab/git-sv/v2/pkg/git"
+	"github.com/thegeeklab/git-sv/v2/pkg/templates"
 	"github.com/urfave/cli/v2"
 )
 
@@ -23,33 +26,17 @@ const (
 	configDir      = ".gitsv"
 )
 
-//go:embed resources/templates/*.tpl
-var defaultTemplatesFS embed.FS
-
-func templateFS(filepath string) fs.FS {
-	if _, err := os.Stat(filepath); err != nil {
-		defaultTemplatesFS, _ := fs.Sub(defaultTemplatesFS, "resources/templates")
-
-		return defaultTemplatesFS
-	}
-
-	return os.DirFS(filepath)
-}
-
 func main() {
-	log.SetFlags(0)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	cfg := config.New(configDir, configFilename)
 
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal("error while retrieving working directory: %w", err)
-	}
+	messageProcessor := git.NewMessageProcessor(cfg.CommitMessage, cfg.Branches)
+	g := git.New(messageProcessor, cfg.Tag)
+	semverProcessor := git.NewSemVerCommitsProcessor(cfg.Versioning, cfg.CommitMessage)
+	releasenotesProcessor := git.NewReleaseNoteProcessor(cfg.ReleaseNotes)
 
-	cfg := loadCfg(wd)
-	messageProcessor := sv.NewMessageProcessor(cfg.CommitMessage, cfg.Branches)
-	git := sv.NewGit(messageProcessor, cfg.Tag)
-	semverProcessor := sv.NewSemVerCommitsProcessor(cfg.Versioning, cfg.CommitMessage)
-	releasenotesProcessor := sv.NewReleaseNoteProcessor(cfg.ReleaseNotes)
-	outputFormatter := sv.NewOutputFormatter(templateFS(filepath.Join(wd, configDir, "templates")))
+	tpls := templates.New(configDir)
+	outputFormatter := formatter.NewOutputFormatter(tpls)
 
 	cli.VersionPrinter = func(c *cli.Context) {
 		fmt.Printf("%s version=%s date=%s\n", c.App.Name, c.App.Version, BuildDate)
@@ -59,6 +46,12 @@ func main() {
 		Name:    "git-sv",
 		Usage:   "Semantic version for git.",
 		Version: BuildVersion,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "log-level",
+				Usage: "log level",
+			},
+		},
 		Commands: []*cli.Command{
 			{
 				Name:    "config",
@@ -68,12 +61,12 @@ func main() {
 					{
 						Name:   "default",
 						Usage:  "show default config",
-						Action: configDefaultHandler(),
+						Action: commands.ConfigDefaultHandler(),
 					},
 					{
 						Name:   "show",
 						Usage:  "show current config",
-						Action: configShowHandler(cfg),
+						Action: commands.ConfigShowHandler(cfg),
 					},
 				},
 			},
@@ -81,13 +74,13 @@ func main() {
 				Name:    "current-version",
 				Aliases: []string{"cv"},
 				Usage:   "get last released version from git",
-				Action:  currentVersionHandler(git),
+				Action:  commands.CurrentVersionHandler(g),
 			},
 			{
 				Name:    "next-version",
 				Aliases: []string{"nv"},
 				Usage:   "generate the next version based on git commit messages",
-				Action:  nextVersionHandler(git, semverProcessor),
+				Action:  commands.NextVersionHandler(g, semverProcessor),
 			},
 			{
 				Name:    "commit-log",
@@ -96,8 +89,8 @@ func main() {
 				Description: `The range filter is used based on git log filters, check https://git-scm.com/docs/git-log
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
-				Action: commitLogHandler(git),
-				Flags:  commitLogFlags(),
+				Action: commands.CommitLogHandler(g),
+				Flags:  commands.CommitLogFlags(),
 			},
 			{
 				Name:    "commit-notes",
@@ -106,74 +99,47 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 				Description: `The range filter is used based on git log filters, check https://git-scm.com/docs/git-log
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
-				Action: commitNotesHandler(git, releasenotesProcessor, outputFormatter),
-				Flags:  commitNotesFlags(),
+				Action: commands.CommitNotesHandler(g, releasenotesProcessor, outputFormatter),
+				Flags:  commands.CommitNotesFlags(),
 			},
 			{
 				Name:    "release-notes",
 				Aliases: []string{"rn"},
 				Usage:   "generate release notes",
-				Action:  releaseNotesHandler(git, semverProcessor, releasenotesProcessor, outputFormatter),
-				Flags:   releaseNotesFlags(),
+				Action:  commands.ReleaseNotesHandler(g, semverProcessor, releasenotesProcessor, outputFormatter),
+				Flags:   commands.ReleaseNotesFlags(),
 			},
 			{
 				Name:    "changelog",
 				Aliases: []string{"cgl"},
 				Usage:   "generate changelog",
-				Action:  changelogHandler(git, semverProcessor, releasenotesProcessor, outputFormatter),
-				Flags:   changelogFlags(),
+				Action:  commands.ChangelogHandler(g, semverProcessor, releasenotesProcessor, outputFormatter),
+				Flags:   commands.ChangelogFlags(),
 			},
 			{
 				Name:    "tag",
 				Aliases: []string{"tg"},
 				Usage:   "generate tag with version based on git commit messages",
-				Action:  tagHandler(git, semverProcessor),
+				Action:  commands.TagHandler(g, semverProcessor),
 			},
 			{
 				Name:    "commit",
 				Aliases: []string{"cmt"},
 				Usage:   "execute git commit with conventional commit message helper",
-				Action:  commitHandler(cfg, git, messageProcessor),
-				Flags:   commitFlags(),
+				Action:  commands.CommitHandler(cfg, g, messageProcessor),
+				Flags:   commands.CommitFlags(),
 			},
 			{
 				Name:    "validate-commit-message",
 				Aliases: []string{"vcm"},
 				Usage:   "use as prepare-commit-message hook to validate and enhance commit message",
-				Action:  validateCommitMessageHandler(git, messageProcessor),
-				Flags:   validateCommitMessageFlags(),
+				Action:  commands.ValidateCommitMessageHandler(g, messageProcessor),
+				Flags:   commands.ValidateCommitMessageFlags(),
 			},
 		},
 	}
 
 	if apperr := app.Run(os.Args); apperr != nil {
-		log.Fatal("ERROR: ", apperr)
+		log.Fatal().Err(apperr)
 	}
-}
-
-func loadCfg(wd string) Config {
-	cfg := defaultConfig()
-
-	envCfg := loadEnvConfig()
-	if envCfg.Home != "" {
-		homeCfgFilepath := filepath.Join(envCfg.Home, configFilename)
-		if homeCfg, err := readConfig(homeCfgFilepath); err == nil {
-			if merr := merge(&cfg, migrateConfig(homeCfg, homeCfgFilepath)); merr != nil {
-				log.Fatal("failed to merge user config, error: ", merr)
-			}
-		}
-	}
-
-	repoCfgFilepath := filepath.Join(wd, configDir, configFilename)
-	if repoCfg, err := readConfig(repoCfgFilepath); err == nil {
-		if merr := merge(&cfg, migrateConfig(repoCfg, repoCfgFilepath)); merr != nil {
-			log.Fatal("failed to merge repo config, error: ", merr)
-		}
-
-		if len(repoCfg.ReleaseNotes.Headers) > 0 { // mergo is merging maps, headers will be overwritten
-			cfg.ReleaseNotes.Headers = repoCfg.ReleaseNotes.Headers
-		}
-	}
-
-	return cfg
 }

@@ -1,15 +1,16 @@
-package sv
+package formatter
 
 import (
 	"bytes"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/thegeeklab/git-sv/v2/pkg/git"
+	"github.com/thegeeklab/git-sv/v2/pkg/templates"
 )
 
-var templatesFS = os.DirFS("../cmd/git-sv/resources/templates")
+var tmpls = templates.New("")
 
 var dateChangelog = `## v1.0.0 (2020-05-01)`
 
@@ -42,7 +43,7 @@ func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		input   ReleaseNote
+		input   git.ReleaseNote
 		want    string
 		wantErr bool
 	}{
@@ -54,7 +55,7 @@ func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewOutputFormatter(templatesFS).FormatReleaseNote(tt.input)
+			got, err := NewOutputFormatter(tmpls).FormatReleaseNote(tt.input)
 			if got != tt.want {
 				t.Errorf("OutputFormatterImpl.FormatReleaseNote() = %v, want %v", got, tt.want)
 			}
@@ -66,42 +67,42 @@ func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 	}
 }
 
-func emptyReleaseNote(tag string, date time.Time) ReleaseNote {
+func emptyReleaseNote(tag string, date time.Time) git.ReleaseNote {
 	v, _ := semver.NewVersion(tag)
 
-	return ReleaseNote{
+	return git.ReleaseNote{
 		Version: v,
 		Tag:     tag,
 		Date:    date,
 	}
 }
 
-func fullReleaseNote(tag string, date time.Time) ReleaseNote {
+func fullReleaseNote(tag string, date time.Time) git.ReleaseNote {
 	v, _ := semver.NewVersion(tag)
-	sections := []ReleaseNoteSection{
-		newReleaseNoteCommitsSection(
+	sections := []git.ReleaseNoteSection{
+		git.TestNewReleaseNoteCommitsSection(
 			"Features",
 			[]string{"feat"},
-			[]GitCommitLog{commitlog("feat", map[string]string{}, "a")},
+			[]git.CommitLog{git.TestCommitlog("feat", map[string]string{}, "a")},
 		),
-		newReleaseNoteCommitsSection(
+		git.TestNewReleaseNoteCommitsSection(
 			"Bug Fixes",
 			[]string{"fix"},
-			[]GitCommitLog{commitlog("fix", map[string]string{}, "a")},
+			[]git.CommitLog{git.TestCommitlog("fix", map[string]string{}, "a")},
 		),
-		newReleaseNoteCommitsSection(
+		git.TestNewReleaseNoteCommitsSection(
 			"Build",
 			[]string{"build"},
-			[]GitCommitLog{commitlog("build", map[string]string{}, "a")},
+			[]git.CommitLog{git.TestCommitlog("build", map[string]string{}, "a")},
 		),
-		ReleaseNoteBreakingChangeSection{"Breaking Changes", []string{"break change message"}},
+		git.ReleaseNoteBreakingChangeSection{Name: "Breaking Changes", Messages: []string{"break change message"}},
 	}
 
-	return releaseNote(v, tag, date, sections, map[string]struct{}{"a": {}})
+	return git.TestReleaseNote(v, tag, date, sections, map[string]struct{}{"a": {}})
 }
 
 func Test_checkTemplatesExecution(t *testing.T) {
-	tpls := NewOutputFormatter(templatesFS).templates
+	tpls := NewOutputFormatter(tmpls).templates
 	tests := []struct {
 		template  string
 		variables interface{}
@@ -131,20 +132,20 @@ func releaseNotesVariables(release string) releaseNoteTemplateVariables {
 	return releaseNoteTemplateVariables{
 		Release: release,
 		Date:    time.Date(2006, 1, 0o2, 0, 0, 0, 0, time.UTC),
-		Sections: []ReleaseNoteSection{
-			newReleaseNoteCommitsSection("Features",
+		Sections: []git.ReleaseNoteSection{
+			git.TestNewReleaseNoteCommitsSection("Features",
 				[]string{"feat"},
-				[]GitCommitLog{commitlog("feat", map[string]string{}, "a")},
+				[]git.CommitLog{git.TestCommitlog("feat", map[string]string{}, "a")},
 			),
-			newReleaseNoteCommitsSection("Bug Fixes",
+			git.TestNewReleaseNoteCommitsSection("Bug Fixes",
 				[]string{"fix"},
-				[]GitCommitLog{commitlog("fix", map[string]string{}, "a")},
+				[]git.CommitLog{git.TestCommitlog("fix", map[string]string{}, "a")},
 			),
-			newReleaseNoteCommitsSection("Build",
+			git.TestNewReleaseNoteCommitsSection("Build",
 				[]string{"build"},
-				[]GitCommitLog{commitlog("build", map[string]string{}, "a")},
+				[]git.CommitLog{git.TestCommitlog("build", map[string]string{}, "a")},
 			),
-			ReleaseNoteBreakingChangeSection{"Breaking Changes", []string{"break change message"}},
+			git.ReleaseNoteBreakingChangeSection{Name: "Breaking Changes", Messages: []string{"break change message"}},
 		},
 	}
 }

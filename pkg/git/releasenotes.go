@@ -1,4 +1,4 @@
-package sv
+package git
 
 import (
 	"time"
@@ -8,7 +8,7 @@ import (
 
 // ReleaseNoteProcessor release note processor interface.
 type ReleaseNoteProcessor interface {
-	Create(version *semver.Version, tag string, date time.Time, commits []GitCommitLog) ReleaseNote
+	Create(version *semver.Version, tag string, date time.Time, commits []CommitLog) ReleaseNote
 }
 
 // ReleaseNoteProcessorImpl release note based on commit log.
@@ -26,7 +26,7 @@ func (p ReleaseNoteProcessorImpl) Create(
 	version *semver.Version,
 	tag string,
 	date time.Time,
-	commits []GitCommitLog,
+	commits []CommitLog,
 ) ReleaseNote {
 	mapping := commitSectionMapping(p.cfg.Sections)
 
@@ -144,7 +144,7 @@ func (s ReleaseNoteBreakingChangeSection) SectionName() string {
 type ReleaseNoteCommitsSection struct {
 	Name  string
 	Types []string
-	Items []GitCommitLog
+	Items []CommitLog
 }
 
 // SectionType section type.

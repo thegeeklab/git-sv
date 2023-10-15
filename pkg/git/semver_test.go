@@ -1,4 +1,4 @@
-package sv
+package git
 
 import (
 	"reflect"
@@ -12,95 +12,95 @@ func TestSemVerCommitsProcessorImpl_NextVersion(t *testing.T) {
 		name          string
 		ignoreUnknown bool
 		version       *semver.Version
-		commits       []GitCommitLog
+		commits       []CommitLog
 		want          *semver.Version
 		wantUpdated   bool
 	}{
 		{
 			"no update",
 			true,
-			version("0.0.0"),
-			[]GitCommitLog{},
-			version("0.0.0"),
+			TestVersion("0.0.0"),
+			[]CommitLog{},
+			TestVersion("0.0.0"),
 			false,
 		},
 		{
 			"no update without version",
 			true,
 			nil,
-			[]GitCommitLog{},
+			[]CommitLog{},
 			nil,
 			false,
 		},
 		{
 			"no update on unknown type",
 			true,
-			version("0.0.0"),
-			[]GitCommitLog{commitlog("a", map[string]string{}, "a")},
-			version("0.0.0"),
+			TestVersion("0.0.0"),
+			[]CommitLog{TestCommitlog("a", map[string]string{}, "a")},
+			TestVersion("0.0.0"),
 			false,
 		},
 		{
 			"no update on unmapped known type",
 			false,
-			version("0.0.0"),
-			[]GitCommitLog{commitlog("none", map[string]string{}, "a")},
-			version("0.0.0"),
+			TestVersion("0.0.0"),
+			[]CommitLog{TestCommitlog("none", map[string]string{}, "a")},
+			TestVersion("0.0.0"),
 			false,
 		},
 		{
 			"update patch on unknown type",
 			false,
-			version("0.0.0"),
-			[]GitCommitLog{commitlog("a", map[string]string{}, "a")},
-			version("0.0.1"),
+			TestVersion("0.0.0"),
+			[]CommitLog{TestCommitlog("a", map[string]string{}, "a")},
+			TestVersion("0.0.1"),
 			true,
 		},
 		{
 			"patch update",
-			false, version("0.0.0"),
-			[]GitCommitLog{commitlog("patch", map[string]string{}, "a")},
-			version("0.0.1"), true,
+			false, TestVersion("0.0.0"),
+			[]CommitLog{TestCommitlog("patch", map[string]string{}, "a")},
+			TestVersion("0.0.1"), true,
 		},
 		{
 			"patch update without version",
 			false,
 			nil,
-			[]GitCommitLog{commitlog("patch", map[string]string{}, "a")},
+			[]CommitLog{TestCommitlog("patch", map[string]string{}, "a")},
 			nil,
 			true,
 		},
 		{
 			"minor update",
 			false,
-			version("0.0.0"),
-			[]GitCommitLog{
-				commitlog("patch", map[string]string{}, "a"),
-				commitlog("minor", map[string]string{}, "a"),
+			TestVersion("0.0.0"),
+			[]CommitLog{
+				TestCommitlog("patch", map[string]string{}, "a"),
+				TestCommitlog("minor", map[string]string{}, "a"),
 			},
-			version("0.1.0"),
+			TestVersion("0.1.0"),
 			true,
 		},
 		{
 			"major update",
 			false,
-			version("0.0.0"),
-			[]GitCommitLog{
-				commitlog("patch", map[string]string{}, "a"),
-				commitlog("major", map[string]string{}, "a"),
+			TestVersion("0.0.0"),
+			[]CommitLog{
+				TestCommitlog("patch", map[string]string{}, "a"),
+				TestCommitlog("major", map[string]string{}, "a"),
 			},
-			version("1.0.0"),
+			TestVersion("1.0.0"),
 			true,
 		},
 		{
 			"breaking change update",
 			false,
-			version("0.0.0"),
-			[]GitCommitLog{
-				commitlog("patch", map[string]string{}, "a"),
-				commitlog("patch", map[string]string{"breaking-change": "break"}, "a"),
+			TestVersion("0.0.0"),
+			[]CommitLog{
+				TestCommitlog("patch", map[string]string{}, "a"),
+				TestCommitlog("patch", map[string]string{"breaking-change": "break"}, "a"),
 			},
-			version("1.0.0"),
+			TestVersion("1.0.0"),
 			true,
 		},
 	}
@@ -132,9 +132,9 @@ func TestToVersion(t *testing.T) {
 		want    *semver.Version
 		wantErr bool
 	}{
-		{"empty version", "", version("0.0.0"), false},
+		{"empty version", "", TestVersion("0.0.0"), false},
 		{"invalid version", "abc", nil, true},
-		{"valid version", "1.2.3", version("1.2.3"), false},
+		{"valid version", "1.2.3", TestVersion("1.2.3"), false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

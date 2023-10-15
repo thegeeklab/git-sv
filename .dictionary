@@ -3,7 +3,6 @@ YAML
 .gitsv
 cli
 getsection
-timefmt
 cfg
 json
 changelog

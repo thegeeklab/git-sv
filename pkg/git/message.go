@@ -1,17 +1,25 @@
-package sv
+package git
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 )
 
 const (
-	breakingChangeFooterKey   = "BREAKING CHANGE"
-	breakingChangeMetadataKey = "breaking-change"
-	issueMetadataKey          = "issue"
-	messageRegexGroupName     = "header"
+	BreakingChangeFooterKey   = "BREAKING CHANGE"
+	BreakingChangeMetadataKey = "breaking-change"
+	IssueMetadataKey          = "issue"
+	MessageRegexGroupName     = "header"
+)
+
+var (
+	errInvalidCommitMessage = errors.New("commit message not valid")
+	errIssueIDNotFound      = errors.New("could not find issue id using configured regex")
+	errInvalidIssueRegex    = errors.New("could not compile issue regex")
+	errInvalidHeaderRegex   = errors.New("invalid regex on header-selector")
 )
 
 // CommitMessage is a message using conventional commits.
@@ -28,11 +36,11 @@ type CommitMessage struct {
 func NewCommitMessage(ctype, scope, description, body, issue, breakingChanges string) CommitMessage {
 	metadata := make(map[string]string)
 	if issue != "" {
-		metadata[issueMetadataKey] = issue
+		metadata[IssueMetadataKey] = issue
 	}
 
 	if breakingChanges != "" {
-		metadata[breakingChangeMetadataKey] = breakingChanges
+		metadata[BreakingChangeMetadataKey] = breakingChanges
 	}
 
 	return CommitMessage{
@@ -47,12 +55,12 @@ func NewCommitMessage(ctype, scope, description, body, issue, breakingChanges st
 
 // Issue return issue from metadata.
 func (m CommitMessage) Issue() string {
-	return m.Metadata[issueMetadataKey]
+	return m.Metadata[IssueMetadataKey]
 }
 
 // BreakingMessage return breaking change message from metadata.
 func (m CommitMessage) BreakingMessage() string {
-	return m.Metadata[breakingChangeMetadataKey]
+	return m.Metadata[BreakingChangeMetadataKey]
 }
 
 // MessageProcessor interface.
@@ -219,10 +227,10 @@ func (p MessageProcessorImpl) Format(msg CommitMessage) (string, string, string)
 
 	var footer strings.Builder
 	if msg.BreakingMessage() != "" {
-		footer.WriteString(fmt.Sprintf("%s: %s", breakingChangeFooterKey, msg.BreakingMessage()))
+		footer.WriteString(fmt.Sprintf("%s: %s", BreakingChangeFooterKey, msg.BreakingMessage()))
 	}
 
-	if issue, exists := msg.Metadata[issueMetadataKey]; exists && p.messageCfg.IssueFooterConfig().Key != "" {
+	if issue, exists := msg.Metadata[IssueMetadataKey]; exists && p.messageCfg.IssueFooterConfig().Key != "" {
 		if footer.Len() > 0 {
 			footer.WriteString("\n")
 		}
@@ -263,8 +271,8 @@ func (p MessageProcessorImpl) Parse(subject, body string) (CommitMessage, error)
 		}
 	}
 
-	if tagValue := extractFooterMetadata(breakingChangeFooterKey, commitBody, false); tagValue != "" {
-		metadata[breakingChangeMetadataKey] = tagValue
+	if tagValue := extractFooterMetadata(BreakingChangeFooterKey, commitBody, false); tagValue != "" {
+		metadata[BreakingChangeMetadataKey] = tagValue
 		hasBreakingChange = true
 	}
 
@@ -288,9 +296,9 @@ func (p MessageProcessorImpl) prepareHeader(header string) (string, error) {
 		return "", fmt.Errorf("%w: %s: %s", errInvalidHeaderRegex, p.messageCfg.HeaderSelector, err.Error())
 	}
 
-	index := regex.SubexpIndex(messageRegexGroupName)
+	index := regex.SubexpIndex(MessageRegexGroupName)
 	if index < 0 {
-		return "", fmt.Errorf("%w: could not find group %s", errInvalidHeaderRegex, messageRegexGroupName)
+		return "", fmt.Errorf("%w: could not find group %s", errInvalidHeaderRegex, MessageRegexGroupName)
 	}
 
 	match := regex.FindStringSubmatch(header)
@@ -299,7 +307,7 @@ func (p MessageProcessorImpl) prepareHeader(header string) (string, error) {
 		return "", fmt.Errorf(
 			"%w: could not find group %s in match result for '%s'",
 			errInvalidHeaderRegex,
-			messageRegexGroupName,
+			MessageRegexGroupName,
 			header,
 		)
 	}
@@ -335,7 +343,7 @@ func extractFooterMetadata(key, text string, useHash bool) string {
 }
 
 func hasFooter(message string) bool {
-	r := regexp.MustCompile("^[a-zA-Z-]+: .*|^[a-zA-Z-]+ #.*|^" + breakingChangeFooterKey + ": .*")
+	r := regexp.MustCompile("^[a-zA-Z-]+: .*|^[a-zA-Z-]+ #.*|^" + BreakingChangeFooterKey + ": .*")
 
 	scanner := bufio.NewScanner(strings.NewReader(message))
 	lines := 0

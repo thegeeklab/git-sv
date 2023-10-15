@@ -168,22 +168,6 @@ Each `ReleaseNoteSection` will be configured according with `release-notes.secti
 
 > :warning: currently only `commits` and `breaking-changes` are supported as `section-types`, using a different value for this field will make the section to be removed from the template variables.
 
-##### Functions
-
-Beside the [go template functions](https://pkg.go.dev/text/template#hdr-Functions), the following functions are available to use in the templates. Check [formatter_functions.go](sv/formatter_functions.go) to see the functions implementation.
-
-###### timefmt
-
-**Usage:** timefmt time "2006-01-02"
-
-Receive a time.Time and a layout string and returns a textual representation of the time according with the layout provided. Check <https://pkg.go.dev/time#Time.Format> for more information.
-
-###### getsection
-
-**Usage:** getsection sections "Features"
-
-Receive a list of ReleaseNoteSection and a Section name and returns a section with the provided name. If no section is found, it will return `nil`.
-
 ### Running
 
 Run `git-sv` to get the list of available parameters:

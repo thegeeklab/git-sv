@@ -1,4 +1,4 @@
-package sv
+package git
 
 // ==== Message ====
 
@@ -13,7 +13,7 @@ type CommitMessageConfig struct {
 
 // IssueFooterConfig config for issue.
 func (c CommitMessageConfig) IssueFooterConfig() CommitMessageFooterConfig {
-	if v, exists := c.Footer[issueMetadataKey]; exists {
+	if v, exists := c.Footer[IssueMetadataKey]; exists {
 		return v
 	}
 

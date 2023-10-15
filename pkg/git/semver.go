@@ -1,4 +1,4 @@
-package sv
+package git
 
 import "github.com/Masterminds/semver/v3"
 
@@ -30,7 +30,7 @@ func ToVersion(value string) (*semver.Version, error) {
 
 // SemVerCommitsProcessor interface.
 type SemVerCommitsProcessor interface {
-	NextVersion(version *semver.Version, commits []GitCommitLog) (*semver.Version, bool)
+	NextVersion(version *semver.Version, commits []CommitLog) (*semver.Version, bool)
 }
 
 // SemVerCommitsProcessorImpl process versions using commit log.
@@ -55,7 +55,7 @@ func NewSemVerCommitsProcessor(vcfg VersioningConfig, mcfg CommitMessageConfig) 
 
 // NextVersion calculates next version based on commit log.
 func (p SemVerCommitsProcessorImpl) NextVersion(
-	version *semver.Version, commits []GitCommitLog,
+	version *semver.Version, commits []CommitLog,
 ) (*semver.Version, bool) {
 	versionToUpdate := none
 	for _, commit := range commits {
@@ -87,7 +87,7 @@ func updateVersion(version semver.Version, versionToUpdate versionType) semver.V
 	}
 }
 
-func (p SemVerCommitsProcessorImpl) versionTypeToUpdate(commit GitCommitLog) versionType {
+func (p SemVerCommitsProcessorImpl) versionTypeToUpdate(commit CommitLog) versionType {
 	if commit.Message.IsBreakingChange {
 		return major
 	}

@@ -1,4 +1,4 @@
-package sv
+package git
 
 import (
 	"reflect"
@@ -572,8 +572,8 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Body:             completeBody,
 				IsBreakingChange: true,
 				Metadata: map[string]string{
-					issueMetadataKey:          "JIRA-123",
-					breakingChangeMetadataKey: "this change breaks everything",
+					IssueMetadataKey:          "JIRA-123",
+					BreakingChangeMetadataKey: "this change breaks everything",
 				},
 			},
 		},
@@ -587,7 +587,7 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             issueOnlyBody,
 				IsBreakingChange: false,
-				Metadata:         map[string]string{issueMetadataKey: "JIRA-456"},
+				Metadata:         map[string]string{IssueMetadataKey: "JIRA-456"},
 			},
 		},
 		{
@@ -600,7 +600,7 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             issueSynonymsBody,
 				IsBreakingChange: false,
-				Metadata:         map[string]string{issueMetadataKey: "JIRA-789"},
+				Metadata:         map[string]string{IssueMetadataKey: "JIRA-789"},
 			},
 		},
 		{
@@ -626,7 +626,7 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             hashMetadataBody,
 				IsBreakingChange: false,
-				Metadata:         map[string]string{issueMetadataKey: "JIRA-999", "refs": "#123"},
+				Metadata:         map[string]string{IssueMetadataKey: "JIRA-999", "refs": "#123"},
 			},
 		},
 		{
@@ -652,7 +652,7 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             expectedBodyWithCarriage,
 				IsBreakingChange: false,
-				Metadata:         map[string]string{issueMetadataKey: "JIRA-123"},
+				Metadata:         map[string]string{IssueMetadataKey: "JIRA-123"},
 			},
 		},
 	}
