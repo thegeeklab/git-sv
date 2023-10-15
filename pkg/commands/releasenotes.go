@@ -6,7 +6,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/thegeeklab/git-sv/v2/pkg/app"
-	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,15 +20,10 @@ func ReleaseNotesFlags() []cli.Flag {
 	}
 }
 
-func ReleaseNotesHandler(
-	gsv app.GitSV,
-	semverProcessor app.CommitsProcessor,
-	rnProcessor app.ReleaseNoteProcessor,
-	outputFormatter formatter.OutputFormatter,
-) cli.ActionFunc {
+func ReleaseNotesHandler(g app.GitSV) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var (
-			commits   []app.CommitLog
+			commits   []sv.CommitLog
 			rnVersion *semver.Version
 			tag       string
 			date      time.Time
@@ -36,19 +31,19 @@ func ReleaseNotesHandler(
 		)
 
 		if tag = c.String("t"); tag != "" {
-			rnVersion, date, commits, err = getTagVersionInfo(gsv, tag)
+			rnVersion, date, commits, err = getTagVersionInfo(g, tag)
 		} else {
 			// TODO: should generate release notes if version was not updated?
-			rnVersion, _, date, commits, err = getNextVersionInfo(gsv, semverProcessor)
+			rnVersion, _, date, commits, err = getNextVersionInfo(g, g.CommitProcessor)
 		}
 
 		if err != nil {
 			return err
 		}
 
-		releasenote := rnProcessor.Create(rnVersion, tag, date, commits)
+		releasenote := g.ReleasenotesProcessor.Create(rnVersion, tag, date, commits)
 
-		output, err := outputFormatter.FormatReleaseNote(releasenote)
+		output, err := g.OutputFormatter.FormatReleaseNote(releasenote)
 		if err != nil {
 			return fmt.Errorf("could not format release notes, message: %w", err)
 		}

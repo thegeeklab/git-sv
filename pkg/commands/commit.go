@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/thegeeklab/git-sv/v2/pkg/app"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 	"github.com/urfave/cli/v2"
 )
 
@@ -52,7 +53,7 @@ func CommitFlags() []cli.Flag {
 	}
 }
 
-func CommitHandler(cfg *app.Config, gsv app.GitSV, messageProcessor app.MessageProcessor) cli.ActionFunc {
+func CommitHandler(g app.GitSV) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		noBreaking := c.Bool("no-breaking")
 		noBody := c.Bool("no-body")
@@ -63,17 +64,17 @@ func CommitHandler(cfg *app.Config, gsv app.GitSV, messageProcessor app.MessageP
 		inputDescription := c.String("description")
 		inputBreakingChange := c.String("breaking-change")
 
-		ctype, err := getCommitType(cfg, messageProcessor, inputType)
+		ctype, err := getCommitType(g.Config, g.MessageProcessor, inputType)
 		if err != nil {
 			return err
 		}
 
-		scope, err := getCommitScope(cfg, messageProcessor, inputScope, noScope)
+		scope, err := getCommitScope(g.Config, g.MessageProcessor, inputScope, noScope)
 		if err != nil {
 			return err
 		}
 
-		subject, err := getCommitDescription(messageProcessor, inputDescription)
+		subject, err := getCommitDescription(g.MessageProcessor, inputDescription)
 		if err != nil {
 			return err
 		}
@@ -83,7 +84,7 @@ func CommitHandler(cfg *app.Config, gsv app.GitSV, messageProcessor app.MessageP
 			return err
 		}
 
-		issue, err := getCommitIssue(cfg, messageProcessor, gsv.Branch(), noIssue)
+		issue, err := getCommitIssue(g.Config, g.MessageProcessor, g.Branch(), noIssue)
 		if err != nil {
 			return err
 		}
@@ -93,11 +94,11 @@ func CommitHandler(cfg *app.Config, gsv app.GitSV, messageProcessor app.MessageP
 			return err
 		}
 
-		header, body, footer := messageProcessor.Format(
-			app.NewCommitMessage(ctype, scope, subject, fullBody, issue, breakingChange),
+		header, body, footer := g.MessageProcessor.Format(
+			sv.NewCommitMessage(ctype, scope, subject, fullBody, issue, breakingChange),
 		)
 
-		err = gsv.Commit(header, body, footer)
+		err = g.Commit(header, body, footer)
 		if err != nil {
 			return fmt.Errorf("error executing git commit, message: %w", err)
 		}

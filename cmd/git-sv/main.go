@@ -9,8 +9,6 @@ import (
 
 	"github.com/thegeeklab/git-sv/v2/pkg/app"
 	"github.com/thegeeklab/git-sv/v2/pkg/commands"
-	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
-	"github.com/thegeeklab/git-sv/v2/pkg/templates"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,22 +18,10 @@ var (
 	BuildDate    = "00000000"
 )
 
-const (
-	configFilename = "config.yml"
-	configDir      = ".gitsv"
-)
-
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	cfg := app.NewConfig(configDir, configFilename)
 
-	messageProcessor := app.NewMessageProcessor(cfg.CommitMessage, cfg.Branches)
-	g := app.New(messageProcessor, cfg.Tag)
-	semverProcessor := app.NewSemVerCommitsProcessor(cfg.Versioning, cfg.CommitMessage)
-	releasenotesProcessor := app.NewReleaseNoteProcessor(cfg.ReleaseNotes)
-
-	tpls := templates.New(configDir)
-	outputFormatter := formatter.NewOutputFormatter(tpls)
+	g := app.New()
 
 	cli.VersionPrinter = func(c *cli.Context) {
 		fmt.Printf("%s version=%s date=%s\n", c.App.Name, c.App.Version, BuildDate)
@@ -65,7 +51,7 @@ func main() {
 					{
 						Name:   "show",
 						Usage:  "show current config",
-						Action: commands.ConfigShowHandler(cfg),
+						Action: commands.ConfigShowHandler(g.Config),
 					},
 				},
 			},
@@ -79,7 +65,7 @@ func main() {
 				Name:    "next-version",
 				Aliases: []string{"nv"},
 				Usage:   "generate the next version based on git commit messages",
-				Action:  commands.NextVersionHandler(g, semverProcessor),
+				Action:  commands.NextVersionHandler(g),
 			},
 			{
 				Name:    "commit-log",
@@ -98,41 +84,41 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 				Description: `The range filter is used based on git log filters, check https://git-scm.com/docs/git-log
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
-				Action: commands.CommitNotesHandler(g, releasenotesProcessor, outputFormatter),
+				Action: commands.CommitNotesHandler(g),
 				Flags:  commands.CommitNotesFlags(),
 			},
 			{
 				Name:    "release-notes",
 				Aliases: []string{"rn"},
 				Usage:   "generate release notes",
-				Action:  commands.ReleaseNotesHandler(g, semverProcessor, releasenotesProcessor, outputFormatter),
+				Action:  commands.ReleaseNotesHandler(g),
 				Flags:   commands.ReleaseNotesFlags(),
 			},
 			{
 				Name:    "changelog",
 				Aliases: []string{"cgl"},
 				Usage:   "generate changelog",
-				Action:  commands.ChangelogHandler(g, semverProcessor, releasenotesProcessor, outputFormatter),
+				Action:  commands.ChangelogHandler(g),
 				Flags:   commands.ChangelogFlags(),
 			},
 			{
 				Name:    "tag",
 				Aliases: []string{"tg"},
 				Usage:   "generate tag with version based on git commit messages",
-				Action:  commands.TagHandler(g, semverProcessor),
+				Action:  commands.TagHandler(g),
 			},
 			{
 				Name:    "commit",
 				Aliases: []string{"cmt"},
 				Usage:   "execute git commit with conventional commit message helper",
-				Action:  commands.CommitHandler(cfg, g, messageProcessor),
+				Action:  commands.CommitHandler(g),
 				Flags:   commands.CommitFlags(),
 			},
 			{
 				Name:    "validate-commit-message",
 				Aliases: []string{"vcm"},
 				Usage:   "use as prepare-commit-message hook to validate and enhance commit message",
-				Action:  commands.ValidateCommitMessageHandler(g, messageProcessor),
+				Action:  commands.ValidateCommitMessageHandler(g),
 				Flags:   commands.ValidateCommitMessageFlags(),
 			},
 		},

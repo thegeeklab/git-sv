@@ -9,7 +9,7 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/rs/zerolog/log"
-	"github.com/thegeeklab/git-sv/v2/pkg/app"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 )
 
 //go:embed assets
@@ -67,7 +67,7 @@ func zeroDate(fmt string, date time.Time) string {
 	return date.Format(fmt)
 }
 
-func getSection(name string, sections []app.ReleaseNoteSection) app.ReleaseNoteSection { //nolint:ireturn
+func getSection(name string, sections []sv.ReleaseNoteSection) sv.ReleaseNoteSection { //nolint:ireturn
 	for _, section := range sections {
 		if section.SectionName() == name {
 			return section

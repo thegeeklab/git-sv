@@ -37,12 +37,12 @@ func ValidateCommitMessageFlags() []cli.Flag {
 	}
 }
 
-func ValidateCommitMessageHandler(gsv app.GitSV, messageProcessor app.MessageProcessor) cli.ActionFunc {
+func ValidateCommitMessageHandler(g app.GitSV) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		branch := gsv.Branch()
-		detached, derr := gsv.IsDetached()
+		branch := g.Branch()
+		detached, derr := g.IsDetached()
 
-		if messageProcessor.SkipBranch(branch, derr == nil && detached) {
+		if g.MessageProcessor.SkipBranch(branch, derr == nil && detached) {
 			log.Warn().Msg("commit message validation skipped, branch in ignore list or detached...")
 
 			return nil
@@ -61,11 +61,11 @@ func ValidateCommitMessageHandler(gsv app.GitSV, messageProcessor app.MessagePro
 			return fmt.Errorf("%w: %s", errReadCommitMessage, err.Error())
 		}
 
-		if err := messageProcessor.Validate(commitMessage); err != nil {
+		if err := g.MessageProcessor.Validate(commitMessage); err != nil {
 			return fmt.Errorf("%w: %s", errReadCommitMessage, err.Error())
 		}
 
-		msg, err := messageProcessor.Enhance(branch, commitMessage)
+		msg, err := g.MessageProcessor.Enhance(branch, commitMessage)
 		if err != nil {
 			log.Warn().Err(err).Msg("could not enhance commit message")
 

@@ -12,23 +12,19 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 )
 
 const (
 	logSeparator = "###"
 	endLine      = "~~~"
+
+	configFilename = "config.yml"
+	configDir      = ".gitsv"
 )
 
 var errUnknownGitError = errors.New("git command failed")
-
-// CommitLog description of a single commit log.
-type CommitLog struct {
-	Date       string        `json:"date,omitempty"`
-	Timestamp  int           `json:"timestamp,omitempty"`
-	AuthorName string        `json:"authorName,omitempty"`
-	Hash       string        `json:"hash,omitempty"`
-	Message    CommitMessage `json:"message,omitempty"`
-}
 
 // Tag git tag info.
 type Tag struct {
@@ -60,16 +56,24 @@ func NewLogRange(t LogRangeType, start, end string) LogRange {
 
 // Impl git command implementation.
 type GitSV struct {
-	messageProcessor MessageProcessor
-	tagCfg           TagConfig
+	Config *Config
+
+	MessageProcessor      sv.MessageProcessor
+	CommitProcessor       sv.CommitProcessor
+	ReleasenotesProcessor sv.ReleaseNoteProcessor
+
+	OutputFormatter formatter.OutputFormatter
 }
 
 // New constructor.
-func New(messageProcessor MessageProcessor, cfg TagConfig) GitSV {
-	return GitSV{
-		messageProcessor: messageProcessor,
-		tagCfg:           cfg,
+func New() GitSV {
+	g := GitSV{
+		Config: NewConfig(configDir, configFilename),
 	}
+
+	g.MessageProcessor = sv.NewMessageProcessor(g.Config.CommitMessage, g.Config.Branches)
+
+	return g
 }
 
 // LastTag get last tag, if no tag found, return empty.
@@ -78,7 +82,7 @@ func (g GitSV) LastTag() string {
 	cmd := exec.Command(
 		"git",
 		"for-each-ref",
-		fmt.Sprintf("refs/tags/%s", *g.tagCfg.Filter),
+		fmt.Sprintf("refs/tags/%s", *g.Config.Tag.Filter),
 		"--sort",
 		"-creatordate",
 		"--format",
@@ -96,7 +100,7 @@ func (g GitSV) LastTag() string {
 }
 
 // Log return git log.
-func (g GitSV) Log(lr LogRange) ([]CommitLog, error) {
+func (g GitSV) Log(lr LogRange) ([]sv.CommitLog, error) {
 	format := "--pretty=format:\"%ad" + logSeparator +
 		"%at" + logSeparator +
 		"%cN" + logSeparator +
@@ -125,7 +129,7 @@ func (g GitSV) Log(lr LogRange) ([]CommitLog, error) {
 		return nil, combinedOutputErr(err, out)
 	}
 
-	logs, parseErr := parseLogOutput(g.messageProcessor, string(out))
+	logs, parseErr := parseLogOutput(g.MessageProcessor, string(out))
 	if parseErr != nil {
 		return nil, parseErr
 	}
@@ -133,7 +137,7 @@ func (g GitSV) Log(lr LogRange) ([]CommitLog, error) {
 	return logs, nil
 }
 
-// Commit runs git commit.
+// Commit runs git sv.
 func (g GitSV) Commit(header, body, footer string) error {
 	cmd := exec.Command("git", "commit", "-m", header, "-m", "", "-m", body, "-m", "", "-m", footer)
 	cmd.Stdout = os.Stdout
@@ -144,7 +148,7 @@ func (g GitSV) Commit(header, body, footer string) error {
 
 // Tag create a git tag.
 func (g GitSV) Tag(version semver.Version) (string, error) {
-	tag := fmt.Sprintf(*g.tagCfg.Pattern, version.Major(), version.Minor(), version.Patch())
+	tag := fmt.Sprintf(*g.Config.Tag.Pattern, version.Major(), version.Minor(), version.Patch())
 	tagMsg := fmt.Sprintf("Version %d.%d.%d", version.Major(), version.Minor(), version.Patch())
 
 	tagCommand := exec.Command("git", "tag", "-a", tag, "-m", tagMsg)
@@ -170,7 +174,7 @@ func (g GitSV) Tags() ([]Tag, error) {
 		"creatordate",
 		"--format",
 		"%(creatordate:iso8601)#%(refname:short)",
-		fmt.Sprintf("refs/tags/%s", *g.tagCfg.Filter),
+		fmt.Sprintf("refs/tags/%s", *g.Config.Tag.Filter),
 	)
 
 	out, err := cmd.CombinedOutput()
@@ -227,11 +231,11 @@ func parseTagsOutput(input string) ([]Tag, error) {
 	return result, nil
 }
 
-func parseLogOutput(messageProcessor MessageProcessor, log string) ([]CommitLog, error) {
+func parseLogOutput(messageProcessor sv.MessageProcessor, log string) ([]sv.CommitLog, error) {
 	scanner := bufio.NewScanner(strings.NewReader(log))
 	scanner.Split(splitAt([]byte(endLine)))
 
-	var logs []CommitLog
+	var logs []sv.CommitLog
 
 	for scanner.Scan() {
 		if text := strings.TrimSpace(strings.Trim(scanner.Text(), "\"")); text != "" {
@@ -247,16 +251,16 @@ func parseLogOutput(messageProcessor MessageProcessor, log string) ([]CommitLog,
 	return logs, nil
 }
 
-func parseCommitLog(messageProcessor MessageProcessor, commit string) (CommitLog, error) {
-	content := strings.Split(strings.Trim(commit, "\""), logSeparator)
+func parseCommitLog(messageProcessor sv.MessageProcessor, c string) (sv.CommitLog, error) {
+	content := strings.Split(strings.Trim(c, "\""), logSeparator)
 	timestamp, _ := strconv.Atoi(content[1])
 
 	message, err := messageProcessor.Parse(content[4], content[5])
 	if err != nil {
-		return CommitLog{}, err
+		return sv.CommitLog{}, err
 	}
 
-	return CommitLog{
+	return sv.CommitLog{
 		Date:       content[0],
 		Timestamp:  timestamp,
 		AuthorName: content[2],

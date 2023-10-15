@@ -1,9 +1,39 @@
-package app
+package sv
 
 import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+)
+
+// ReleaseNotesConfig release notes preferences.
+type ReleaseNotesConfig struct {
+	Headers  map[string]string           `yaml:"headers,omitempty"`
+	Sections []ReleaseNotesSectionConfig `yaml:"sections"`
+}
+
+func (cfg ReleaseNotesConfig) sectionConfig(sectionType string) *ReleaseNotesSectionConfig {
+	for _, sectionCfg := range cfg.Sections {
+		if sectionCfg.SectionType == sectionType {
+			return &sectionCfg
+		}
+	}
+
+	return nil
+}
+
+// ReleaseNotesSectionConfig preferences for a single section on release notes.
+type ReleaseNotesSectionConfig struct {
+	Name        string   `yaml:"name"`
+	SectionType string   `yaml:"section-type"`
+	CommitTypes []string `yaml:"commit-types,flow,omitempty"`
+}
+
+const (
+	// ReleaseNotesSectionTypeCommits ReleaseNotesSectionConfig.SectionType value.
+	ReleaseNotesSectionTypeCommits = "commits"
+	// ReleaseNotesSectionTypeBreakingChanges ReleaseNotesSectionConfig.SectionType value.
+	ReleaseNotesSectionTypeBreakingChanges = "breaking-changes"
 )
 
 // ReleaseNoteProcessor release note processor interface.

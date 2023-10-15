@@ -1,4 +1,4 @@
-package app
+package sv
 
 import (
 	"reflect"
@@ -7,7 +7,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-func TestSemVerCommitsProcessor_NextVersion(t *testing.T) {
+func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
 	tests := []struct {
 		name          string
 		ignoreUnknown bool
@@ -106,7 +106,7 @@ func TestSemVerCommitsProcessor_NextVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewSemVerCommitsProcessor(
+			p := NewSemVerCommitProcessor(
 				VersioningConfig{
 					UpdateMajor:   []string{"major"},
 					UpdateMinor:   []string{"minor"},
@@ -116,10 +116,10 @@ func TestSemVerCommitsProcessor_NextVersion(t *testing.T) {
 				CommitMessageConfig{Types: []string{"major", "minor", "patch", "none"}})
 			got, gotUpdated := p.NextVersion(tt.version, tt.commits)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SemVerCommitsProcessor.NextVersion() Version = %v, want %v", got, tt.want)
+				t.Errorf("SemVerCommitProcessor.NextVersion() Version = %v, want %v", got, tt.want)
 			}
 			if tt.wantUpdated != gotUpdated {
-				t.Errorf("SemVerCommitsProcessor.NextVersion() Updated = %v, want %v", gotUpdated, tt.wantUpdated)
+				t.Errorf("SemVerCommitProcessor.NextVersion() Updated = %v, want %v", gotUpdated, tt.wantUpdated)
 			}
 		})
 	}

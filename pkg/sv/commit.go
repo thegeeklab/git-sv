@@ -1,4 +1,4 @@
-package app
+package sv
 
 import "github.com/Masterminds/semver/v3"
 
@@ -10,6 +10,15 @@ const (
 	minor
 	major
 )
+
+// CommitLog description of a single commit log.
+type CommitLog struct {
+	Date       string        `json:"date,omitempty"`
+	Timestamp  int           `json:"timestamp,omitempty"`
+	AuthorName string        `json:"authorName,omitempty"`
+	Hash       string        `json:"hash,omitempty"`
+	Message    CommitMessage `json:"message,omitempty"`
+}
 
 // IsValidVersion return true when a version is valid.
 func IsValidVersion(value string) bool {
@@ -28,13 +37,13 @@ func ToVersion(value string) (*semver.Version, error) {
 	return semver.NewVersion(version)
 }
 
-// CommitsProcessor interface.
-type CommitsProcessor interface {
+// CommitProcessor interface.
+type CommitProcessor interface {
 	NextVersion(version *semver.Version, commits []CommitLog) (*semver.Version, bool)
 }
 
-// SemVerCommitsProcessor process versions using commit log.
-type SemVerCommitsProcessor struct {
+// SemVerCommitProcessor process versions using commit log.
+type SemVerCommitProcessor struct {
 	MajorVersionTypes         map[string]struct{}
 	MinorVersionTypes         map[string]struct{}
 	PatchVersionTypes         map[string]struct{}
@@ -42,9 +51,17 @@ type SemVerCommitsProcessor struct {
 	IncludeUnknownTypeAsPatch bool
 }
 
-// NewSemVerCommitsProcessor SemanticVersionCommitsProcessorImpl constructor.
-func NewSemVerCommitsProcessor(vcfg VersioningConfig, mcfg CommitMessageConfig) *SemVerCommitsProcessor {
-	return &SemVerCommitsProcessor{
+// VersioningConfig versioning preferences.
+type VersioningConfig struct {
+	UpdateMajor   []string `yaml:"update-major,flow"`
+	UpdateMinor   []string `yaml:"update-minor,flow"`
+	UpdatePatch   []string `yaml:"update-patch,flow"`
+	IgnoreUnknown bool     `yaml:"ignore-unknown"`
+}
+
+// NewSemVerCommitProcessor SemanticVersionCommitProcessorImpl constructor.
+func NewSemVerCommitProcessor(vcfg VersioningConfig, mcfg CommitMessageConfig) *SemVerCommitProcessor {
+	return &SemVerCommitProcessor{
 		IncludeUnknownTypeAsPatch: !vcfg.IgnoreUnknown,
 		MajorVersionTypes:         toMap(vcfg.UpdateMajor),
 		MinorVersionTypes:         toMap(vcfg.UpdateMinor),
@@ -54,7 +71,7 @@ func NewSemVerCommitsProcessor(vcfg VersioningConfig, mcfg CommitMessageConfig) 
 }
 
 // NextVersion calculates next version based on commit log.
-func (p SemVerCommitsProcessor) NextVersion(
+func (p SemVerCommitProcessor) NextVersion(
 	version *semver.Version, commits []CommitLog,
 ) (*semver.Version, bool) {
 	versionToUpdate := none
@@ -87,7 +104,7 @@ func updateVersion(version semver.Version, versionToUpdate versionType) semver.V
 	}
 }
 
-func (p SemVerCommitsProcessor) versionTypeToUpdate(commit CommitLog) versionType {
+func (p SemVerCommitProcessor) versionTypeToUpdate(commit CommitLog) versionType {
 	if commit.Message.IsBreakingChange {
 		return major
 	}

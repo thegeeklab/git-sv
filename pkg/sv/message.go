@@ -1,4 +1,4 @@
-package app
+package sv
 
 import (
 	"bufio"
@@ -30,6 +30,50 @@ type CommitMessage struct {
 	Body             string            `json:"body,omitempty"`
 	IsBreakingChange bool              `json:"isBreakingChange,omitempty"`
 	Metadata         map[string]string `json:"metadata,omitempty"`
+}
+
+type CommitMessageConfig struct {
+	Types          []string                             `yaml:"types,flow"`
+	HeaderSelector string                               `yaml:"header-selector"`
+	Scope          CommitMessageScopeConfig             `yaml:"scope"`
+	Footer         map[string]CommitMessageFooterConfig `yaml:"footer"`
+	Issue          CommitMessageIssueConfig             `yaml:"issue"`
+}
+
+// IssueFooterConfig config for issue.
+func (c CommitMessageConfig) IssueFooterConfig() CommitMessageFooterConfig {
+	if v, exists := c.Footer[IssueMetadataKey]; exists {
+		return v
+	}
+
+	return CommitMessageFooterConfig{}
+}
+
+// CommitMessageScopeConfig config scope preferences.
+type CommitMessageScopeConfig struct {
+	Values []string `yaml:"values"`
+}
+
+// CommitMessageFooterConfig config footer metadata.
+type CommitMessageFooterConfig struct {
+	Key            string   `yaml:"key"`
+	KeySynonyms    []string `yaml:"key-synonyms,flow"`
+	UseHash        bool     `yaml:"use-hash"`
+	AddValuePrefix string   `yaml:"add-value-prefix"`
+}
+
+// CommitMessageIssueConfig issue preferences.
+type CommitMessageIssueConfig struct {
+	Regex string `yaml:"regex"`
+}
+
+// BranchesConfig branches preferences.
+type BranchesConfig struct {
+	Prefix       string   `yaml:"prefix"`
+	Suffix       string   `yaml:"suffix"`
+	DisableIssue bool     `yaml:"disable-issue"`
+	Skip         []string `yaml:"skip,flow"`
+	SkipDetached *bool    `yaml:"skip-detached"`
 }
 
 // NewCommitMessage commit message constructor.

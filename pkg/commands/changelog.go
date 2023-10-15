@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/thegeeklab/git-sv/v2/pkg/app"
-	"github.com/thegeeklab/git-sv/v2/pkg/formatter"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,13 +33,10 @@ func ChangelogFlags() []cli.Flag {
 }
 
 func ChangelogHandler(
-	gsv app.GitSV,
-	semverProcessor app.CommitsProcessor,
-	rnProcessor app.ReleaseNoteProcessor,
-	formatter formatter.OutputFormatter,
+	g app.GitSV,
 ) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		tags, err := gsv.Tags()
+		tags, err := g.Tags()
 		if err != nil {
 			return err
 		}
@@ -48,7 +45,7 @@ func ChangelogHandler(
 			return tags[i].Date.After(tags[j].Date)
 		})
 
-		var releaseNotes []app.ReleaseNote
+		var releaseNotes []sv.ReleaseNote
 
 		size := c.Int("size")
 		all := c.Bool("all")
@@ -56,13 +53,13 @@ func ChangelogHandler(
 		semanticVersionOnly := c.Bool("semantic-version-only")
 
 		if addNextVersion {
-			rnVersion, updated, date, commits, uerr := getNextVersionInfo(gsv, semverProcessor)
+			rnVersion, updated, date, commits, uerr := getNextVersionInfo(g, g.CommitProcessor)
 			if uerr != nil {
 				return uerr
 			}
 
 			if updated {
-				releaseNotes = append(releaseNotes, rnProcessor.Create(rnVersion, "", date, commits))
+				releaseNotes = append(releaseNotes, g.ReleasenotesProcessor.Create(rnVersion, "", date, commits))
 			}
 		}
 
@@ -76,20 +73,20 @@ func ChangelogHandler(
 				previousTag = tags[i+1].Name
 			}
 
-			if semanticVersionOnly && !app.IsValidVersion(tag.Name) {
+			if semanticVersionOnly && !sv.IsValidVersion(tag.Name) {
 				continue
 			}
 
-			commits, err := gsv.Log(app.NewLogRange(app.TagRange, previousTag, tag.Name))
+			commits, err := g.Log(app.NewLogRange(app.TagRange, previousTag, tag.Name))
 			if err != nil {
 				return fmt.Errorf("error getting git log from tag: %s, message: %w", tag.Name, err)
 			}
 
-			currentVer, _ := app.ToVersion(tag.Name)
-			releaseNotes = append(releaseNotes, rnProcessor.Create(currentVer, tag.Name, tag.Date, commits))
+			currentVer, _ := sv.ToVersion(tag.Name)
+			releaseNotes = append(releaseNotes, g.ReleasenotesProcessor.Create(currentVer, tag.Name, tag.Date, commits))
 		}
 
-		output, err := formatter.FormatChangelog(releaseNotes)
+		output, err := g.OutputFormatter.FormatChangelog(releaseNotes)
 		if err != nil {
 			return fmt.Errorf("could not format changelog, message: %w", err)
 		}

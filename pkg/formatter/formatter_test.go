@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/thegeeklab/git-sv/v2/pkg/app"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 	"github.com/thegeeklab/git-sv/v2/pkg/templates"
 )
 
@@ -43,7 +43,7 @@ func TestBaseOutputFormatter_FormatReleaseNote(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		input   app.ReleaseNote
+		input   sv.ReleaseNote
 		want    string
 		wantErr bool
 	}{
@@ -67,38 +67,38 @@ func TestBaseOutputFormatter_FormatReleaseNote(t *testing.T) {
 	}
 }
 
-func emptyReleaseNote(tag string, date time.Time) app.ReleaseNote {
+func emptyReleaseNote(tag string, date time.Time) sv.ReleaseNote {
 	v, _ := semver.NewVersion(tag)
 
-	return app.ReleaseNote{
+	return sv.ReleaseNote{
 		Version: v,
 		Tag:     tag,
 		Date:    date,
 	}
 }
 
-func fullReleaseNote(tag string, date time.Time) app.ReleaseNote {
+func fullReleaseNote(tag string, date time.Time) sv.ReleaseNote {
 	v, _ := semver.NewVersion(tag)
-	sections := []app.ReleaseNoteSection{
-		app.TestNewReleaseNoteCommitsSection(
+	sections := []sv.ReleaseNoteSection{
+		sv.TestNewReleaseNoteCommitsSection(
 			"Features",
 			[]string{"feat"},
-			[]app.CommitLog{app.TestCommitlog("feat", map[string]string{}, "a")},
+			[]sv.CommitLog{sv.TestCommitlog("feat", map[string]string{}, "a")},
 		),
-		app.TestNewReleaseNoteCommitsSection(
+		sv.TestNewReleaseNoteCommitsSection(
 			"Bug Fixes",
 			[]string{"fix"},
-			[]app.CommitLog{app.TestCommitlog("fix", map[string]string{}, "a")},
+			[]sv.CommitLog{sv.TestCommitlog("fix", map[string]string{}, "a")},
 		),
-		app.TestNewReleaseNoteCommitsSection(
+		sv.TestNewReleaseNoteCommitsSection(
 			"Build",
 			[]string{"build"},
-			[]app.CommitLog{app.TestCommitlog("build", map[string]string{}, "a")},
+			[]sv.CommitLog{sv.TestCommitlog("build", map[string]string{}, "a")},
 		),
-		app.ReleaseNoteBreakingChangeSection{Name: "Breaking Changes", Messages: []string{"break change message"}},
+		sv.ReleaseNoteBreakingChangeSection{Name: "Breaking Changes", Messages: []string{"break change message"}},
 	}
 
-	return app.TestReleaseNote(v, tag, date, sections, map[string]struct{}{"a": {}})
+	return sv.TestReleaseNote(v, tag, date, sections, map[string]struct{}{"a": {}})
 }
 
 func Test_checkTemplatesExecution(t *testing.T) {
@@ -132,20 +132,20 @@ func releaseNotesVariables(release string) releaseNoteTemplateVariables {
 	return releaseNoteTemplateVariables{
 		Release: release,
 		Date:    time.Date(2006, 1, 0o2, 0, 0, 0, 0, time.UTC),
-		Sections: []app.ReleaseNoteSection{
-			app.TestNewReleaseNoteCommitsSection("Features",
+		Sections: []sv.ReleaseNoteSection{
+			sv.TestNewReleaseNoteCommitsSection("Features",
 				[]string{"feat"},
-				[]app.CommitLog{app.TestCommitlog("feat", map[string]string{}, "a")},
+				[]sv.CommitLog{sv.TestCommitlog("feat", map[string]string{}, "a")},
 			),
-			app.TestNewReleaseNoteCommitsSection("Bug Fixes",
+			sv.TestNewReleaseNoteCommitsSection("Bug Fixes",
 				[]string{"fix"},
-				[]app.CommitLog{app.TestCommitlog("fix", map[string]string{}, "a")},
+				[]sv.CommitLog{sv.TestCommitlog("fix", map[string]string{}, "a")},
 			),
-			app.TestNewReleaseNoteCommitsSection("Build",
+			sv.TestNewReleaseNoteCommitsSection("Build",
 				[]string{"build"},
-				[]app.CommitLog{app.TestCommitlog("build", map[string]string{}, "a")},
+				[]sv.CommitLog{sv.TestCommitlog("build", map[string]string{}, "a")},
 			),
-			app.ReleaseNoteBreakingChangeSection{Name: "Breaking Changes", Messages: []string{"break change message"}},
+			sv.ReleaseNoteBreakingChangeSection{Name: "Breaking Changes", Messages: []string{"break change message"}},
 		},
 	}
 }

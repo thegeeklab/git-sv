@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/thegeeklab/git-sv/v2/pkg/app"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 )
 
 type releaseNoteTemplateVariables struct {
@@ -15,14 +15,14 @@ type releaseNoteTemplateVariables struct {
 	Tag         string
 	Version     *semver.Version
 	Date        time.Time
-	Sections    []app.ReleaseNoteSection
+	Sections    []sv.ReleaseNoteSection
 	AuthorNames []string
 }
 
 // OutputFormatter output formatter interface.
 type OutputFormatter interface {
-	FormatReleaseNote(releasenote app.ReleaseNote) (string, error)
-	FormatChangelog(releasenotes []app.ReleaseNote) (string, error)
+	FormatReleaseNote(releasenote sv.ReleaseNote) (string, error)
+	FormatChangelog(releasenotes []sv.ReleaseNote) (string, error)
 }
 
 // BaseOutputFormatter formater for release note and changelog.
@@ -36,7 +36,7 @@ func NewOutputFormatter(tpls *template.Template) *BaseOutputFormatter {
 }
 
 // FormatReleaseNote format a release note.
-func (p BaseOutputFormatter) FormatReleaseNote(releasenote app.ReleaseNote) (string, error) {
+func (p BaseOutputFormatter) FormatReleaseNote(releasenote sv.ReleaseNote) (string, error) {
 	var b bytes.Buffer
 	if err := p.templates.ExecuteTemplate(&b, "releasenotes-md.tpl", releaseNoteVariables(releasenote)); err != nil {
 		return "", err
@@ -46,7 +46,7 @@ func (p BaseOutputFormatter) FormatReleaseNote(releasenote app.ReleaseNote) (str
 }
 
 // FormatChangelog format a changelog.
-func (p BaseOutputFormatter) FormatChangelog(releasenotes []app.ReleaseNote) (string, error) {
+func (p BaseOutputFormatter) FormatChangelog(releasenotes []sv.ReleaseNote) (string, error) {
 	templateVars := make([]releaseNoteTemplateVariables, len(releasenotes))
 	for i, v := range releasenotes {
 		templateVars[i] = releaseNoteVariables(v)
@@ -60,7 +60,7 @@ func (p BaseOutputFormatter) FormatChangelog(releasenotes []app.ReleaseNote) (st
 	return b.String(), nil
 }
 
-func releaseNoteVariables(releasenote app.ReleaseNote) releaseNoteTemplateVariables {
+func releaseNoteVariables(releasenote sv.ReleaseNote) releaseNoteTemplateVariables {
 	release := releasenote.Tag
 	if releasenote.Version != nil {
 		release = "v" + releasenote.Version.String()

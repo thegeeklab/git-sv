@@ -3,6 +3,8 @@ package app
 import (
 	"reflect"
 	"testing"
+
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 )
 
 func Test_merge(t *testing.T) {
@@ -34,56 +36,56 @@ func Test_merge(t *testing.T) {
 		},
 		{
 			"overwrite list",
-			Config{Branches: BranchesConfig{Skip: []string{"a", "b"}}},
-			Config{Branches: BranchesConfig{Skip: []string{"c", "d"}}},
-			Config{Branches: BranchesConfig{Skip: []string{"c", "d"}}},
+			Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
+			Config{Branches: sv.BranchesConfig{Skip: []string{"c", "d"}}},
+			Config{Branches: sv.BranchesConfig{Skip: []string{"c", "d"}}},
 			false,
 		},
 		{
 			"overwrite list with empty",
-			Config{Branches: BranchesConfig{Skip: []string{"a", "b"}}},
-			Config{Branches: BranchesConfig{Skip: make([]string, 0)}},
-			Config{Branches: BranchesConfig{Skip: make([]string, 0)}},
+			Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
+			Config{Branches: sv.BranchesConfig{Skip: make([]string, 0)}},
+			Config{Branches: sv.BranchesConfig{Skip: make([]string, 0)}},
 			false,
 		},
 		{
 			"default list",
-			Config{Branches: BranchesConfig{Skip: []string{"a", "b"}}},
-			Config{Branches: BranchesConfig{Skip: nil}},
-			Config{Branches: BranchesConfig{Skip: []string{"a", "b"}}},
+			Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
+			Config{Branches: sv.BranchesConfig{Skip: nil}},
+			Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
 			false,
 		},
 
 		{
 			"overwrite pointer bool false",
-			Config{Branches: BranchesConfig{SkipDetached: &boolFalse}},
-			Config{Branches: BranchesConfig{SkipDetached: &boolTrue}},
-			Config{Branches: BranchesConfig{SkipDetached: &boolTrue}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: &boolFalse}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
 			false,
 		},
 		{
 			"overwrite pointer bool true",
-			Config{Branches: BranchesConfig{SkipDetached: &boolTrue}},
-			Config{Branches: BranchesConfig{SkipDetached: &boolFalse}},
-			Config{Branches: BranchesConfig{SkipDetached: &boolFalse}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: &boolFalse}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: &boolFalse}},
 			false,
 		},
 		{
 			"default pointer bool",
-			Config{Branches: BranchesConfig{SkipDetached: &boolTrue}},
-			Config{Branches: BranchesConfig{SkipDetached: nil}},
-			Config{Branches: BranchesConfig{SkipDetached: &boolTrue}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: nil}},
+			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
 			false,
 		},
 		{
 			"merge maps",
-			Config{CommitMessage: CommitMessageConfig{
-				Footer: map[string]CommitMessageFooterConfig{"issue": {Key: "jira"}},
+			Config{CommitMessage: sv.CommitMessageConfig{
+				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
-			Config{CommitMessage: CommitMessageConfig{
-				Footer: map[string]CommitMessageFooterConfig{"issue2": {Key: "jira2"}},
+			Config{CommitMessage: sv.CommitMessageConfig{
+				Footer: map[string]sv.CommitMessageFooterConfig{"issue2": {Key: "jira2"}},
 			}},
-			Config{CommitMessage: CommitMessageConfig{Footer: map[string]CommitMessageFooterConfig{
+			Config{CommitMessage: sv.CommitMessageConfig{Footer: map[string]sv.CommitMessageFooterConfig{
 				"issue":  {Key: "jira"},
 				"issue2": {Key: "jira2"},
 			}}},
@@ -91,35 +93,35 @@ func Test_merge(t *testing.T) {
 		},
 		{
 			"default maps",
-			Config{CommitMessage: CommitMessageConfig{
-				Footer: map[string]CommitMessageFooterConfig{"issue": {Key: "jira"}},
+			Config{CommitMessage: sv.CommitMessageConfig{
+				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
-			Config{CommitMessage: CommitMessageConfig{
+			Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: nil,
 			}},
-			Config{CommitMessage: CommitMessageConfig{
-				Footer: map[string]CommitMessageFooterConfig{"issue": {Key: "jira"}},
+			Config{CommitMessage: sv.CommitMessageConfig{
+				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
 			false,
 		},
 		{
 			"merge empty maps",
-			Config{CommitMessage: CommitMessageConfig{
-				Footer: map[string]CommitMessageFooterConfig{"issue": {Key: "jira"}},
+			Config{CommitMessage: sv.CommitMessageConfig{
+				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
-			Config{CommitMessage: CommitMessageConfig{
-				Footer: map[string]CommitMessageFooterConfig{},
+			Config{CommitMessage: sv.CommitMessageConfig{
+				Footer: map[string]sv.CommitMessageFooterConfig{},
 			}},
-			Config{CommitMessage: CommitMessageConfig{
-				Footer: map[string]CommitMessageFooterConfig{"issue": {Key: "jira"}},
+			Config{CommitMessage: sv.CommitMessageConfig{
+				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
 			false,
 		},
 		{
 			"overwrite release notes header",
-			Config{ReleaseNotes: ReleaseNotesConfig{Headers: map[string]string{"a": "aa"}}},
-			Config{ReleaseNotes: ReleaseNotesConfig{Headers: map[string]string{"b": "bb"}}},
-			Config{ReleaseNotes: ReleaseNotesConfig{Headers: map[string]string{"b": "bb"}}},
+			Config{ReleaseNotes: sv.ReleaseNotesConfig{Headers: map[string]string{"a": "aa"}}},
+			Config{ReleaseNotes: sv.ReleaseNotesConfig{Headers: map[string]string{"b": "bb"}}},
+			Config{ReleaseNotes: sv.ReleaseNotesConfig{Headers: map[string]string{"b": "bb"}}},
 			false,
 		},
 		{

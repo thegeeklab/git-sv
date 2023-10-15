@@ -9,9 +9,10 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/thegeeklab/git-sv/v2/pkg/app"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 )
 
-func getTagCommits(gsv app.GitSV, tag string) ([]app.CommitLog, error) {
+func getTagCommits(gsv app.GitSV, tag string) ([]sv.CommitLog, error) {
 	prev, _, err := getTags(gsv, tag)
 	if err != nil {
 		return nil, err
@@ -77,8 +78,8 @@ func str(value, defaultValue string) string {
 	return defaultValue
 }
 
-func getTagVersionInfo(gsv app.GitSV, tag string) (*semver.Version, time.Time, []app.CommitLog, error) {
-	tagVersion, _ := app.ToVersion(tag)
+func getTagVersionInfo(gsv app.GitSV, tag string) (*semver.Version, time.Time, []sv.CommitLog, error) {
+	tagVersion, _ := sv.ToVersion(tag)
 
 	previousTag, currentTag, err := getTags(gsv, tag)
 	if err != nil {
@@ -94,8 +95,8 @@ func getTagVersionInfo(gsv app.GitSV, tag string) (*semver.Version, time.Time, [
 }
 
 func getNextVersionInfo(
-	gsv app.GitSV, semverProcessor app.CommitsProcessor,
-) (*semver.Version, bool, time.Time, []app.CommitLog, error) {
+	gsv app.GitSV, semverProcessor sv.CommitProcessor,
+) (*semver.Version, bool, time.Time, []sv.CommitLog, error) {
 	lastTag := gsv.LastTag()
 
 	commits, err := gsv.Log(app.NewLogRange(app.TagRange, lastTag, ""))
@@ -103,13 +104,13 @@ func getNextVersionInfo(
 		return nil, false, time.Time{}, nil, fmt.Errorf("error getting git log, message: %w", err)
 	}
 
-	currentVer, _ := app.ToVersion(lastTag)
+	currentVer, _ := sv.ToVersion(lastTag)
 	version, updated := semverProcessor.NextVersion(currentVer, commits)
 
 	return version, updated, time.Now(), commits, nil
 }
 
-func getCommitType(cfg *app.Config, p app.MessageProcessor, input string) (string, error) {
+func getCommitType(cfg *app.Config, p sv.MessageProcessor, input string) (string, error) {
 	if input == "" {
 		t, err := promptType(cfg.CommitMessage.Types)
 
@@ -119,7 +120,7 @@ func getCommitType(cfg *app.Config, p app.MessageProcessor, input string) (strin
 	return input, p.ValidateType(input)
 }
 
-func getCommitScope(cfg *app.Config, p app.MessageProcessor, input string, noScope bool) (string, error) {
+func getCommitScope(cfg *app.Config, p sv.MessageProcessor, input string, noScope bool) (string, error) {
 	if input == "" && !noScope {
 		return promptScope(cfg.CommitMessage.Scope.Values)
 	}
@@ -127,7 +128,7 @@ func getCommitScope(cfg *app.Config, p app.MessageProcessor, input string, noSco
 	return input, p.ValidateScope(input)
 }
 
-func getCommitDescription(p app.MessageProcessor, input string) (string, error) {
+func getCommitDescription(p sv.MessageProcessor, input string) (string, error) {
 	if input == "" {
 		return promptSubject()
 	}
@@ -159,7 +160,7 @@ func getCommitBody(noBody bool) (string, error) {
 	return fullBody.String(), nil
 }
 
-func getCommitIssue(cfg *app.Config, p app.MessageProcessor, branch string, noIssue bool) (string, error) {
+func getCommitIssue(cfg *app.Config, p sv.MessageProcessor, branch string, noIssue bool) (string, error) {
 	branchIssue, err := p.IssueID(branch)
 	if err != nil {
 		return "", err

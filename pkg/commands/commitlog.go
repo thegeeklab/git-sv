@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/thegeeklab/git-sv/v2/pkg/app"
+	"github.com/thegeeklab/git-sv/v2/pkg/sv"
 	"github.com/urfave/cli/v2"
 )
 
@@ -41,10 +42,10 @@ func CommitLogFlags() []cli.Flag {
 	}
 }
 
-func CommitLogHandler(gsv app.GitSV) cli.ActionFunc {
+func CommitLogHandler(g app.GitSV) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var (
-			commits []app.CommitLog
+			commits []sv.CommitLog
 			err     error
 		)
 
@@ -58,13 +59,13 @@ func CommitLogHandler(gsv app.GitSV) cli.ActionFunc {
 		}
 
 		if tagFlag != "" {
-			commits, err = getTagCommits(gsv, tagFlag)
+			commits, err = getTagCommits(g, tagFlag)
 		} else {
-			r, rerr := logRange(gsv, rangeFlag, startFlag, endFlag)
+			r, rerr := logRange(g, rangeFlag, startFlag, endFlag)
 			if rerr != nil {
 				return rerr
 			}
-			commits, err = gsv.Log(r)
+			commits, err = g.Log(r)
 		}
 
 		if err != nil {
