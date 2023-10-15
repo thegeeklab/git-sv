@@ -9,7 +9,7 @@ import (
 	"dario.cat/mergo"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog/log"
-	"github.com/thegeeklab/git-sv/v2/pkg/sv"
+	"github.com/thegeeklab/git-sv/v2/sv"
 	"gopkg.in/yaml.v3"
 )
 

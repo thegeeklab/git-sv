@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/app"
+	"github.com/thegeeklab/git-sv/v2/app"
 	"github.com/urfave/cli/v2"
 )
 

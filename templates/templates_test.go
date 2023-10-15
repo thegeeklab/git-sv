@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/sv"
+	"github.com/thegeeklab/git-sv/v2/sv"
 )
 
 func Test_checkTemplatesFiles(t *testing.T) {

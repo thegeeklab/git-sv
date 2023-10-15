@@ -3,12 +3,12 @@ package commands
 import (
 	"fmt"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/app"
-	"github.com/thegeeklab/git-sv/v2/pkg/sv"
+	"github.com/thegeeklab/git-sv/v2/app"
+	"github.com/thegeeklab/git-sv/v2/sv"
 	"github.com/urfave/cli/v2"
 )
 
-func NextVersionHandler(g app.GitSV) cli.ActionFunc {
+func TagHandler(g app.GitSV) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		lastTag := g.LastTag()
 
@@ -23,8 +23,13 @@ func NextVersionHandler(g app.GitSV) cli.ActionFunc {
 		}
 
 		nextVer, _ := g.CommitProcessor.NextVersion(currentVer, commits)
+		tagname, err := g.Tag(*nextVer)
 
-		fmt.Printf("%d.%d.%d\n", nextVer.Major(), nextVer.Minor(), nextVer.Patch())
+		fmt.Println(tagname)
+
+		if err != nil {
+			return fmt.Errorf("error generating tag version: %s, message: %w", nextVer.String(), err)
+		}
 
 		return nil
 	}

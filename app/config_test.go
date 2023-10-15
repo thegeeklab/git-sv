@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/sv"
+	"github.com/thegeeklab/git-sv/v2/sv"
 )
 
 func Test_merge(t *testing.T) {

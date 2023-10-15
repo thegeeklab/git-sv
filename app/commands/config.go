@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/app"
+	"github.com/thegeeklab/git-sv/v2/app"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 )

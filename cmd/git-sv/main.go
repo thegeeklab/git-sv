@@ -7,8 +7,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/thegeeklab/git-sv/v2/pkg/app"
-	"github.com/thegeeklab/git-sv/v2/pkg/commands"
+	"github.com/thegeeklab/git-sv/v2/app"
+	"github.com/thegeeklab/git-sv/v2/app/commands"
 	"github.com/urfave/cli/v2"
 )
 
@@ -19,23 +19,31 @@ var (
 )
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
-	g := app.New()
-
+	gsv := app.New()
 	cli.VersionPrinter = func(c *cli.Context) {
 		fmt.Printf("%s version=%s date=%s\n", c.App.Name, c.App.Version, BuildDate)
 	}
 
 	app := &cli.App{
 		Name:    "git-sv",
-		Usage:   "Semantic version for app.",
+		Usage:   "Semantic version for git.",
 		Version: BuildVersion,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "log-level",
 				Usage: "log level",
 			},
+		},
+		Before: func(ctx *cli.Context) error {
+			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+			lvl, err := zerolog.ParseLevel(ctx.String("log-level"))
+			if err != nil {
+				return err
+			}
+
+			zerolog.SetGlobalLevel(lvl)
+
+			return nil
 		},
 		Commands: []*cli.Command{
 			{
@@ -51,7 +59,7 @@ func main() {
 					{
 						Name:   "show",
 						Usage:  "show current config",
-						Action: commands.ConfigShowHandler(g.Config),
+						Action: commands.ConfigShowHandler(gsv.Config),
 					},
 				},
 			},
@@ -59,13 +67,13 @@ func main() {
 				Name:    "current-version",
 				Aliases: []string{"cv"},
 				Usage:   "get last released version from git",
-				Action:  commands.CurrentVersionHandler(g),
+				Action:  commands.CurrentVersionHandler(gsv),
 			},
 			{
 				Name:    "next-version",
 				Aliases: []string{"nv"},
 				Usage:   "generate the next version based on git commit messages",
-				Action:  commands.NextVersionHandler(g),
+				Action:  commands.NextVersionHandler(gsv),
 			},
 			{
 				Name:    "commit-log",
@@ -74,7 +82,7 @@ func main() {
 				Description: `The range filter is used based on git log filters, check https://git-scm.com/docs/git-log
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
-				Action: commands.CommitLogHandler(g),
+				Action: commands.CommitLogHandler(gsv),
 				Flags:  commands.CommitLogFlags(),
 			},
 			{
@@ -84,47 +92,47 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 				Description: `The range filter is used based on git log filters, check https://git-scm.com/docs/git-log
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
-				Action: commands.CommitNotesHandler(g),
+				Action: commands.CommitNotesHandler(gsv),
 				Flags:  commands.CommitNotesFlags(),
 			},
 			{
 				Name:    "release-notes",
 				Aliases: []string{"rn"},
 				Usage:   "generate release notes",
-				Action:  commands.ReleaseNotesHandler(g),
+				Action:  commands.ReleaseNotesHandler(gsv),
 				Flags:   commands.ReleaseNotesFlags(),
 			},
 			{
 				Name:    "changelog",
 				Aliases: []string{"cgl"},
 				Usage:   "generate changelog",
-				Action:  commands.ChangelogHandler(g),
+				Action:  commands.ChangelogHandler(gsv),
 				Flags:   commands.ChangelogFlags(),
 			},
 			{
 				Name:    "tag",
 				Aliases: []string{"tg"},
 				Usage:   "generate tag with version based on git commit messages",
-				Action:  commands.TagHandler(g),
+				Action:  commands.TagHandler(gsv),
 			},
 			{
 				Name:    "commit",
 				Aliases: []string{"cmt"},
 				Usage:   "execute git commit with conventional commit message helper",
-				Action:  commands.CommitHandler(g),
+				Action:  commands.CommitHandler(gsv),
 				Flags:   commands.CommitFlags(),
 			},
 			{
 				Name:    "validate-commit-message",
 				Aliases: []string{"vcm"},
 				Usage:   "use as prepare-commit-message hook to validate and enhance commit message",
-				Action:  commands.ValidateCommitMessageHandler(g),
+				Action:  commands.ValidateCommitMessageHandler(gsv),
 				Flags:   commands.ValidateCommitMessageFlags(),
 			},
 		},
 	}
 
 	if apperr := app.Run(os.Args); apperr != nil {
-		log.Fatal().Err(apperr)
+		log.Fatal().Err(apperr).Msg("Execution error")
 	}
 }

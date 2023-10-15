@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/thegeeklab/git-sv/v2/pkg/app"
-	"github.com/thegeeklab/git-sv/v2/pkg/sv"
+	"github.com/thegeeklab/git-sv/v2/app"
+	"github.com/thegeeklab/git-sv/v2/sv"
 )
 
 func getTagCommits(gsv app.GitSV, tag string) ([]sv.CommitLog, error) {
