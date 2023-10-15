@@ -5,7 +5,7 @@ import (
 
 	"github.com/thegeeklab/git-sv/v2/app"
 	"github.com/urfave/cli/v2"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func ConfigDefaultHandler() cli.ActionFunc {

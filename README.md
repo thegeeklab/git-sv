@@ -32,7 +32,7 @@ GITSV_VERSION=$(go list -f '{{ .Version }}' -m github.com/thegeeklab/git-sv/v2@l
 
 #### YAML
 
-There are 3 configuration levels when using git-sv: [default](#default), [user](#user), [repository](#repository). All of them are merged considering the follow priority: **repository > user > default**.
+There are 3 configuration levels when using git-sv: [default](#default), [repository](#repository). All of them are merged considering the follow priority: **repository > user > default**.
 
 To see the current configuration, run:
 
@@ -48,21 +48,6 @@ To check the default configuration, run:
 
 ```Shell
 git sv cfg default
-```
-
-###### User
-
-For user configuration, it is necessary to define the `GITSV_HOME` environment variable, e.g.:
-
-```Shell
-GITSV_HOME=/home/myuser/.gitsv # myuser is just an example.
-```
-
-And create a `config.yml` file inside it, e.g.:
-
-```Shell
-.gitsv
-└── config.yml
 ```
 
 ###### Repository

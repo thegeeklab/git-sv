@@ -7,16 +7,10 @@ import (
 	"reflect"
 
 	"dario.cat/mergo"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/v2/sv"
 	"gopkg.in/yaml.v3"
 )
-
-// EnvConfig env vars for cli configuration.
-type EnvConfig struct {
-	Home string `envconfig:"GITSV_HOME" default:""`
-}
 
 // Config cli yaml config.
 type Config struct {
@@ -33,16 +27,6 @@ func NewConfig(configDir, configFilename string) *Config {
 	workDir, _ := os.Getwd()
 	cfg := GetDefault()
 
-	envCfg := loadEnv()
-	if envCfg.Home != "" {
-		homeCfgFilepath := filepath.Join(envCfg.Home, configFilename)
-		if homeCfg, err := readFile(homeCfgFilepath); err == nil {
-			if merr := merge(cfg, migrate(homeCfg, homeCfgFilepath)); merr != nil {
-				log.Fatal().Err(merr).Msg("failed to merge user config")
-			}
-		}
-	}
-
 	repoCfgFilepath := filepath.Join(workDir, configDir, configFilename)
 	if repoCfg, err := readFile(repoCfgFilepath); err == nil {
 		if merr := merge(cfg, migrate(repoCfg, repoCfgFilepath)); merr != nil {
@@ -55,17 +39,6 @@ func NewConfig(configDir, configFilename string) *Config {
 	}
 
 	return cfg
-}
-
-func loadEnv() EnvConfig {
-	var c EnvConfig
-
-	err := envconfig.Process("", &c)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load env config")
-	}
-
-	return c
 }
 
 func readFile(filepath string) (Config, error) {
