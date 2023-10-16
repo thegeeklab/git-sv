@@ -21,13 +21,17 @@ steps:
     image: quay.io/thegeeklab/git-sv
     commands:
       - git fetch --depth=2147483647
+      - git sv current-version
       - git sv release-notes
+      - git sv release-notes -o CHANGELOG.md
 
   publish-github:
     image: docker.io/plugins/github-release
     settings:
       api_key:
         from_secret: github_token
+      files:
+        - dist/*
       note: CHANGELOG.md
       overwrite: true
       title: ${CI_COMMIT_TAG}

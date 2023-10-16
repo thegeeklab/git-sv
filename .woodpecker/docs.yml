@@ -19,6 +19,12 @@ steps:
       FORCE_COLOR: "true"
       NPM_CONFIG_LOGLEVEL: "error"
 
+  link-validation:
+    image: docker.io/lycheeverse/lychee
+    group: test
+    commands:
+      - lychee --no-progress --format detailed README.md
+
   pushrm-dockerhub:
     image: docker.io/chko/docker-pushrm:1
     secrets:

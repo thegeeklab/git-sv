@@ -129,7 +129,7 @@ commit-message:
 
 #### Templates
 
-**git-sv** uses _go templates_ to format the output for `release-notes` and `changelog`, to see how the default template is configured check [template directory](cmd/git-sv/resources/templates). It's possible to overwrite the default configuration by adding `.gitsv/templates` on your repository. The cli expects that at least 2 files exists on your directory: `changelog-md.tpl` and `releasenotes-md.tpl`.
+**git-sv** uses _go templates_ to format the output for `release-notes` and `changelog`, to see how the default template is configured check [template directory](https://github.com/thegeeklab/git-sv/tree/main/templates/assets). It's possible to overwrite the default configuration by adding `.gitsv/templates` on your repository.
 
 ```Shell
 .gitsv
