@@ -17,7 +17,7 @@ steps:
     commands:
       - $(find dist/ -executable -type f -iname ${CI_REPO_NAME}-linux-amd64) --help
 
-  changelog-generate:
+  changelog:
     image: quay.io/thegeeklab/git-sv
     commands:
       - git fetch --depth=2147483647
