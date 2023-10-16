@@ -1,6 +1,6 @@
 module github.com/thegeeklab/git-sv
 
-go 1.19
+go 1.21
 
 require (
 	dario.cat/mergo v1.0.0
