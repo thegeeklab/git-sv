@@ -9,7 +9,7 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/rs/zerolog/log"
-	"github.com/thegeeklab/git-sv/v2/sv"
+	"github.com/thegeeklab/git-sv/sv"
 )
 
 //go:embed assets

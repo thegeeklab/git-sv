@@ -1,4 +1,4 @@
-module github.com/thegeeklab/git-sv/v2
+module github.com/thegeeklab/git-sv
 
 go 1.19
 

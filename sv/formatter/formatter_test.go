@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/thegeeklab/git-sv/v2/sv"
-	"github.com/thegeeklab/git-sv/v2/templates"
+	"github.com/thegeeklab/git-sv/sv"
+	"github.com/thegeeklab/git-sv/templates"
 )
 
 var tmpls = templates.New("")

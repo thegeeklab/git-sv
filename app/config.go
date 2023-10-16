@@ -8,7 +8,7 @@ import (
 
 	"dario.cat/mergo"
 	"github.com/rs/zerolog/log"
-	"github.com/thegeeklab/git-sv/v2/sv"
+	"github.com/thegeeklab/git-sv/sv"
 	"gopkg.in/yaml.v3"
 )
 

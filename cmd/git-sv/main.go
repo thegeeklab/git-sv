@@ -7,8 +7,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/thegeeklab/git-sv/v2/app"
-	"github.com/thegeeklab/git-sv/v2/app/commands"
+	"github.com/thegeeklab/git-sv/app"
+	"github.com/thegeeklab/git-sv/app/commands"
 	"github.com/urfave/cli/v2"
 )
 

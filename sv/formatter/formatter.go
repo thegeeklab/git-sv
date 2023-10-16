@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/thegeeklab/git-sv/v2/sv"
+	"github.com/thegeeklab/git-sv/sv"
 )
 
 type releaseNoteTemplateVariables struct {

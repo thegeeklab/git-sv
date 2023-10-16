@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/thegeeklab/git-sv/v2/app"
-	"github.com/thegeeklab/git-sv/v2/sv"
+	"github.com/thegeeklab/git-sv/app"
+	"github.com/thegeeklab/git-sv/sv"
 	"github.com/urfave/cli/v2"
 )
 

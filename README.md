@@ -22,10 +22,10 @@ If you want to install from source using `go install`, just run:
 
 ```Shell
 # keep in mind that with this, it will compile from source and won't show the version on cli -h.
-go install github.com/thegeeklab/git-sv/v2/cmd/git-sv@latest
+go install github.com/thegeeklab/git-sv/cmd/git-sv@latest
 
 # if you want to add the version on the binary, run this command instead.
-GITSV_VERSION=$(go list -f '{{ .Version }}' -m github.com/thegeeklab/git-sv/v2@latest | sed 's/v//') && go install --ldflags "-X main.Version=$SGITSV_VERSION" github.com/thegeeklab/git-sv/v2/cmd/git-sv@v$GITSV_VERSION
+GITSV_VERSION=$(go list -f '{{ .Version }}' -m github.com/thegeeklab/git-sv/v2@latest | sed 's/v//') && go install --ldflags "-X main.Version=$SGITSV_VERSION" github.com/thegeeklab/git-sv/cmd/git-sv@v$GITSV_VERSION
 ```
 
 ### Configuration

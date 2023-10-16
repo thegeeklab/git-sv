@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/thegeeklab/git-sv/v2/app"
+	"github.com/thegeeklab/git-sv/app"
 	"github.com/urfave/cli/v2"
 )
 
