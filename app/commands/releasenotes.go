@@ -35,7 +35,6 @@ func ReleaseNotesHandler(g app.GitSV, settings *app.ReleaseNotesSettings) cli.Ac
 		var (
 			commits   []sv.CommitLog
 			rnVersion *semver.Version
-			tag       string
 			date      time.Time
 			err       error
 		)
@@ -46,14 +45,14 @@ func ReleaseNotesHandler(g app.GitSV, settings *app.ReleaseNotesSettings) cli.Ac
 			// TODO: should generate release notes if version was not updated?
 			rnVersion, _, date, commits, err = getNextVersionInfo(g, g.CommitProcessor)
 		} else {
-			rnVersion, date, commits, err = getTagVersionInfo(g, tag)
+			rnVersion, date, commits, err = getTagVersionInfo(g, settings.Tag)
 		}
 
 		if err != nil {
 			return err
 		}
 
-		releasenote := g.ReleasenotesProcessor.Create(rnVersion, tag, date, commits)
+		releasenote := g.ReleasenotesProcessor.Create(rnVersion, settings.Tag, date, commits)
 
 		output, err := g.OutputFormatter.FormatReleaseNote(releasenote)
 		if err != nil {
