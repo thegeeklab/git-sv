@@ -31,7 +31,7 @@ func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:        "strict",
-			Usage:       "only show tags 'SemVer-ish'",
+			Usage:       "only include semver comliant tags",
 			Destination: &settings.Strict,
 		},
 		&cli.StringFlag{

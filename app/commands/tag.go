@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
 	"github.com/urfave/cli/v2"
@@ -22,14 +23,19 @@ func TagHandler(g app.GitSV) cli.ActionFunc {
 			return fmt.Errorf("error getting git log: %w", err)
 		}
 
-		nextVer, _ := g.CommitProcessor.NextVersion(currentVer, commits)
+		nextVer, updated := g.CommitProcessor.NextVersion(currentVer, commits)
+		if !updated {
+			log.Info().Msgf("nothing to do: current version %s unchanged", currentVer)
+
+			return nil
+		}
+
 		tagname, err := g.Tag(*nextVer)
-
-		fmt.Println(tagname)
-
 		if err != nil {
 			return fmt.Errorf("error generating tag version: %s: %w", nextVer.String(), err)
 		}
+
+		fmt.Println(tagname)
 
 		return nil
 	}
