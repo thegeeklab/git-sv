@@ -118,13 +118,6 @@ func Test_merge(t *testing.T) {
 			false,
 		},
 		{
-			"overwrite release notes header",
-			Config{ReleaseNotes: sv.ReleaseNotesConfig{Headers: map[string]string{"a": "aa"}}},
-			Config{ReleaseNotes: sv.ReleaseNotesConfig{Headers: map[string]string{"b": "bb"}}},
-			Config{ReleaseNotes: sv.ReleaseNotesConfig{Headers: map[string]string{"b": "bb"}}},
-			false,
-		},
-		{
 			"overwrite tag config",
 			Config{
 				Version: "a",

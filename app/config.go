@@ -74,10 +74,6 @@ func NewConfig(configDir, configFilename string) *Config {
 		if merr := merge(cfg, migrate(repoCfg, repoCfgFilepath)); merr != nil {
 			log.Fatal().Err(merr).Msg("failed to merge repo config")
 		}
-
-		if len(repoCfg.ReleaseNotes.Headers) > 0 { // mergo is merging maps, headers will be overwritten
-			cfg.ReleaseNotes.Headers = repoCfg.ReleaseNotes.Headers
-		}
 	}
 
 	return cfg
@@ -143,14 +139,7 @@ func GetDefault() *Config {
 }
 
 func merge(dst *Config, src Config) error {
-	err := mergo.Merge(dst, src, mergo.WithOverride, mergo.WithTransformers(&mergeTransformer{}))
-	if err == nil {
-		if len(src.ReleaseNotes.Headers) > 0 { // mergo is merging maps, ReleaseNotes.Headers should be overwritten
-			dst.ReleaseNotes.Headers = src.ReleaseNotes.Headers
-		}
-	}
-
-	return err
+	return mergo.Merge(dst, src, mergo.WithOverride, mergo.WithTransformers(&mergeTransformer{}))
 }
 
 type mergeTransformer struct{}
@@ -179,50 +168,7 @@ func (t *mergeTransformer) Transformer(typ reflect.Type) func(dst, src reflect.V
 	return nil
 }
 
+//nolint:revive
 func migrate(cfg Config, filename string) Config {
-	if cfg.ReleaseNotes.Headers == nil {
-		return cfg
-	}
-
-	log.Warn().Msgf("config 'release-notes.headers' on %s is deprecated, please use 'sections' instead!", filename)
-
-	return Config{
-		Version:    cfg.Version,
-		Versioning: cfg.Versioning,
-		Tag:        cfg.Tag,
-		ReleaseNotes: sv.ReleaseNotesConfig{
-			Sections: migrateReleaseNotes(cfg.ReleaseNotes.Headers),
-		},
-		Branches:      cfg.Branches,
-		CommitMessage: cfg.CommitMessage,
-	}
-}
-
-func migrateReleaseNotes(headers map[string]string) []sv.ReleaseNotesSectionConfig {
-	order := []string{"feat", "fix", "refactor", "perf", "test", "build", "ci", "chore", "docs", "style"}
-
-	var sections []sv.ReleaseNotesSectionConfig
-
-	for _, key := range order {
-		if name, exists := headers[key]; exists {
-			sections = append(
-				sections,
-				sv.ReleaseNotesSectionConfig{
-					Name:        name,
-					SectionType: sv.ReleaseNotesSectionTypeCommits,
-					CommitTypes: []string{key},
-				})
-		}
-	}
-
-	if name, exists := headers["breaking-change"]; exists {
-		sections = append(
-			sections,
-			sv.ReleaseNotesSectionConfig{
-				Name:        name,
-				SectionType: sv.ReleaseNotesSectionTypeBreakingChanges,
-			})
-	}
-
-	return sections
+	return cfg
 }
