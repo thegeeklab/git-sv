@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
 	"github.com/urfave/cli/v2"
@@ -22,7 +23,12 @@ func NextVersionHandler(g app.GitSV) cli.ActionFunc {
 			return fmt.Errorf("error getting git log: %w", err)
 		}
 
-		nextVer, _ := g.CommitProcessor.NextVersion(currentVer, commits)
+		nextVer, updated := g.CommitProcessor.NextVersion(currentVer, commits)
+		if !updated {
+			log.Info().Msgf("nothing to do: current version %s unchanged", currentVer)
+
+			return nil
+		}
 
 		fmt.Printf("%d.%d.%d\n", nextVer.Major(), nextVer.Minor(), nextVer.Patch())
 
