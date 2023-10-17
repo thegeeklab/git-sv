@@ -86,8 +86,8 @@ func main() {
 				Description: `The range filter is used based on git log filters, check https://git-scm.com/docs/git-log
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
-				Action: commands.CommitLogHandler(gsv),
-				Flags:  commands.CommitLogFlags(),
+				Action: commands.CommitLogHandler(gsv, &gsv.Settings.CommitLogSettings),
+				Flags:  commands.CommitLogFlags(&gsv.Settings.CommitLogSettings),
 			},
 			{
 				Name:    "commit-notes",
@@ -96,21 +96,21 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 				Description: `The range filter is used based on git log filters, check https://git-scm.com/docs/git-log
 for more info. When flag range is "tag" and start is empty, last tag created will be used instead.
 When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
-				Action: commands.CommitNotesHandler(gsv),
+				Action: commands.CommitNotesHandler(gsv, &gsv.Settings.CommitNotesSettings),
 				Flags:  commands.CommitNotesFlags(&gsv.Settings.CommitNotesSettings),
 			},
 			{
 				Name:    "release-notes",
 				Aliases: []string{"rn"},
 				Usage:   "generate release notes",
-				Action:  commands.ReleaseNotesHandler(gsv),
+				Action:  commands.ReleaseNotesHandler(gsv, &gsv.Settings.ReleaseNotesSettings),
 				Flags:   commands.ReleaseNotesFlags(&gsv.Settings.ReleaseNotesSettings),
 			},
 			{
 				Name:    "changelog",
 				Aliases: []string{"cgl"},
 				Usage:   "generate changelog",
-				Action:  commands.ChangelogHandler(gsv),
+				Action:  commands.ChangelogHandler(gsv, &gsv.Settings.ChangelogSettings),
 				Flags:   commands.ChangelogFlags(&gsv.Settings.ChangelogSettings),
 			},
 			{

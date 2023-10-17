@@ -13,10 +13,11 @@ import (
 func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
 	return []cli.Flag{
 		&cli.IntFlag{
-			Name:    "size",
-			Value:   10, //nolint:gomnd
-			Aliases: []string{"n"},
-			Usage:   "get changelog from last 'n' tags",
+			Name:        "size",
+			Value:       10, //nolint:gomnd
+			Aliases:     []string{"n"},
+			Destination: &settings.Size,
+			Usage:       "get changelog from last 'n' tags",
 		},
 		&cli.BoolFlag{
 			Name:        "all",
@@ -43,7 +44,7 @@ func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
 }
 
 //nolint:gocognit
-func ChangelogHandler(g app.GitSV) cli.ActionFunc {
+func ChangelogHandler(g app.GitSV, settings *app.ChangelogSettings) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		tags, err := g.Tags()
 		if err != nil {
@@ -56,7 +57,7 @@ func ChangelogHandler(g app.GitSV) cli.ActionFunc {
 
 		var releaseNotes []sv.ReleaseNote
 
-		if g.Settings.ChangelogSettings.AddNext {
+		if settings.AddNext {
 			rnVersion, updated, date, commits, uerr := getNextVersionInfo(g, g.CommitProcessor)
 			if uerr != nil {
 				return uerr
@@ -68,7 +69,7 @@ func ChangelogHandler(g app.GitSV) cli.ActionFunc {
 		}
 
 		for i, tag := range tags {
-			if !g.Settings.ChangelogSettings.All && i >= g.Settings.ChangelogSettings.Size {
+			if !settings.All && i >= settings.Size {
 				break
 			}
 
@@ -77,7 +78,7 @@ func ChangelogHandler(g app.GitSV) cli.ActionFunc {
 				previousTag = tags[i+1].Name
 			}
 
-			if g.Settings.ChangelogSettings.Strict && !sv.IsValidVersion(tag.Name) {
+			if settings.Strict && !sv.IsValidVersion(tag.Name) {
 				continue
 			}
 
@@ -95,13 +96,13 @@ func ChangelogHandler(g app.GitSV) cli.ActionFunc {
 			return fmt.Errorf("could not format changelog: %w", err)
 		}
 
-		if g.Settings.ChangelogSettings.Out == "" {
+		if settings.Out == "" {
 			os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
 
 			return nil
 		}
 
-		w, err := os.Create(g.Settings.ChangelogSettings.Out)
+		w, err := os.Create(settings.Out)
 		if err != nil {
 			return fmt.Errorf("could not write changelog: %w", err)
 		}

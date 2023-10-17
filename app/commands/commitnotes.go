@@ -38,20 +38,18 @@ func CommitNotesFlags(settings *app.CommitNotesSettings) []cli.Flag {
 	}
 }
 
-func CommitNotesHandler(g app.GitSV) cli.ActionFunc {
+func CommitNotesHandler(g app.GitSV, settings *app.CommitNotesSettings) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var date time.Time
 
-		rangeFlag := g.Settings.CommitNotesSettings.Range
-
-		lr, err := logRange(g, rangeFlag, g.Settings.CommitNotesSettings.Start, g.Settings.CommitNotesSettings.End)
+		lr, err := logRange(g, settings.Range, settings.Start, settings.End)
 		if err != nil {
 			return err
 		}
 
 		commits, err := g.Log(lr)
 		if err != nil {
-			return fmt.Errorf("error getting git log from range: %s: %w", rangeFlag, err)
+			return fmt.Errorf("error getting git log from range: %s: %w", settings.Range, err)
 		}
 
 		if len(commits) > 0 {
@@ -63,13 +61,13 @@ func CommitNotesHandler(g app.GitSV) cli.ActionFunc {
 			return fmt.Errorf("could not format commit notes: %w", err)
 		}
 
-		if g.Settings.CommitNotesSettings.Out == "" {
+		if settings.End == "" {
 			os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
 
 			return nil
 		}
 
-		w, err := os.Create(g.Settings.CommitNotesSettings.Out)
+		w, err := os.Create(settings.End)
 		if err != nil {
 			return fmt.Errorf("could not write commit notes: %w", err)
 		}

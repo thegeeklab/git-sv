@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -18,6 +19,7 @@ func ReleaseNotesFlags(settings *app.ReleaseNotesSettings) []cli.Flag {
 			Aliases:     []string{"tag"},
 			Usage:       "get release note from tag",
 			Destination: &settings.Tag,
+			Value:       "next",
 		},
 		&cli.StringFlag{
 			Name:        "o",
@@ -28,7 +30,7 @@ func ReleaseNotesFlags(settings *app.ReleaseNotesSettings) []cli.Flag {
 	}
 }
 
-func ReleaseNotesHandler(g app.GitSV) cli.ActionFunc {
+func ReleaseNotesHandler(g app.GitSV, settings *app.ReleaseNotesSettings) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var (
 			commits   []sv.CommitLog
@@ -38,11 +40,13 @@ func ReleaseNotesHandler(g app.GitSV) cli.ActionFunc {
 			err       error
 		)
 
-		if tag = g.Settings.ReleaseNotesSettings.Tag; tag != "" {
-			rnVersion, date, commits, err = getTagVersionInfo(g, tag)
-		} else {
+		tagFlag := strings.TrimSpace(strings.ToLower(settings.Tag))
+
+		if tagFlag == "next" {
 			// TODO: should generate release notes if version was not updated?
 			rnVersion, _, date, commits, err = getNextVersionInfo(g, g.CommitProcessor)
+		} else {
+			rnVersion, date, commits, err = getTagVersionInfo(g, tag)
 		}
 
 		if err != nil {
@@ -56,13 +60,13 @@ func ReleaseNotesHandler(g app.GitSV) cli.ActionFunc {
 			return fmt.Errorf("could not format release notes: %w", err)
 		}
 
-		if g.Settings.ReleaseNotesSettings.Out == "" {
+		if settings.Out == "" {
 			os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
 
 			return nil
 		}
 
-		w, err := os.Create(g.Settings.ReleaseNotesSettings.Out)
+		w, err := os.Create(settings.Out)
 		if err != nil {
 			return fmt.Errorf("could not write release notes: %w", err)
 		}

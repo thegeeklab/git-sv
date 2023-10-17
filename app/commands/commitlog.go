@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
@@ -16,56 +17,61 @@ var (
 	errUnknownTag          = errors.New("unknown tag")
 )
 
-func CommitLogFlags() []cli.Flag {
+func CommitLogFlags(settings *app.CommitLogSettings) []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
-			Name:    "t",
-			Aliases: []string{"tag"},
-			Usage:   "get commit log from a specific tag",
+			Name:        "t",
+			Aliases:     []string{"tag"},
+			Usage:       "get commit log from a specific tag",
+			Destination: &settings.Tag,
+			Value:       "next",
 		},
 		&cli.StringFlag{
-			Name:    "r",
-			Aliases: []string{"range"},
-			Usage:   "type of range of commits, use: tag, date or hash",
-			Value:   string(app.TagRange),
+			Name:        "r",
+			Aliases:     []string{"range"},
+			Usage:       "type of range of commits, use: tag, date or hash",
+			Destination: &settings.Range,
+			Value:       string(app.TagRange),
 		},
 		&cli.StringFlag{
-			Name:    "s",
-			Aliases: []string{"start"},
-			Usage:   "start range of git log revision range, if date, the value is used on since flag instead",
+			Name:        "s",
+			Aliases:     []string{"start"},
+			Usage:       "start range of git log revision range, if date, the value is used on since flag instead",
+			Destination: &settings.Start,
 		},
 		&cli.StringFlag{
-			Name:    "e",
-			Aliases: []string{"end"},
-			Usage:   "end range of git log revision range, if date, the value is used on until flag instead",
+			Name:        "e",
+			Aliases:     []string{"end"},
+			Usage:       "end range of git log revision range, if date, the value is used on until flag instead",
+			Destination: &settings.End,
 		},
 	}
 }
 
-func CommitLogHandler(g app.GitSV) cli.ActionFunc {
+func CommitLogHandler(g app.GitSV, settings *app.CommitLogSettings) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var (
 			commits []sv.CommitLog
 			err     error
 		)
 
-		tagFlag := c.String("t")
-		rangeFlag := c.String("r")
-		startFlag := c.String("s")
-		endFlag := c.String("e")
+		tagDefault := "next"
+		tagFlag := strings.TrimSpace(strings.ToLower(settings.Tag))
 
-		if tagFlag != "" && (rangeFlag != string(app.TagRange) || startFlag != "" || endFlag != "") {
+		if tagFlag != tagDefault &&
+			(settings.Range != string(app.TagRange) || settings.Start != "" || settings.End != "") {
 			return errCanNotCreateTagFlag
 		}
 
-		if tagFlag != "" {
-			commits, err = getTagCommits(g, tagFlag)
-		} else {
-			r, rerr := logRange(g, rangeFlag, startFlag, endFlag)
+		if tagFlag == tagDefault {
+			r, rerr := logRange(g, settings.Range, settings.Start, settings.End)
 			if rerr != nil {
 				return rerr
 			}
+
 			commits, err = g.Log(r)
+		} else {
+			commits, err = getTagCommits(g, tagFlag)
 		}
 
 		if err != nil {
