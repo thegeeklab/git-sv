@@ -8,7 +8,6 @@ import (
 
 // ReleaseNotesConfig release notes preferences.
 type ReleaseNotesConfig struct {
-	Headers  map[string]string           `yaml:"headers,omitempty"`
 	Sections []ReleaseNotesSectionConfig `yaml:"sections"`
 }
 

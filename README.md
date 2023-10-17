@@ -7,42 +7,33 @@ Semantic versioning tool for git based on conventional commits.
 [![GitHub contributors](https://img.shields.io/github/contributors/thegeeklab/git-sv)](https://github.com/thegeeklab/git-sv/graphs/contributors)
 [![License: MIT](https://img.shields.io/github/license/thegeeklab/git-sv)](https://github.com/thegeeklab/git-sv/blob/main/LICENSE)
 
-## Getting Started
-
-### Requirements
+## Requirements
 
 - Git 2.17+
 
-### Installing
+## Installation
 
-- Download the latest release and add the binary to your path.
-- Optional: Set `GITSV_HOME` to define user configurations. Check the [Configuration](#configuration) topic for more information.
-
-If you want to install from source using `go install`, just run:
+Prebuilt multiarch binaries are available for Linux only.
 
 ```Shell
-# keep in mind that with this, it will compile from source and won't show the version on cli -h.
-go install github.com/thegeeklab/git-sv/cmd/git-sv@latest
-
-# if you want to add the version on the binary, run this command instead.
-GITSV_VERSION=$(go list -f '{{ .Version }}' -m github.com/thegeeklab/git-sv@latest | sed 's/v//') && go install --ldflags "-X main.Version=$SGITSV_VERSION" github.com/thegeeklab/git-sv/cmd/git-sv@v$GITSV_VERSION
+curl -SsfL https://github.com/thegeeklab/git-sv/releases/latest/download/git-sv-linux-amd64 -o /usr/local/bin/git-sv
+chmod +x /usr/local/bin/git-sv
 ```
 
-### Configuration
+## Build
 
-#### YAML
-
-There are 3 configuration levels when using git-sv: [default](#default), [repository](#repository). All of them are merged considering the follow priority: **repository > user > default**.
-
-To see the current configuration, run:
+Build the binary from source with the following command:
 
 ```Shell
-git sv cfg show
+make build
 ```
 
-##### Configuration Types
+## Configuration
 
-###### Default
+The configuration is loaded from a YAML file in the following order (last wins):
+
+- built-in default
+- `.gitsv/config.yml` in repository root
 
 To check the default configuration, run:
 
@@ -50,37 +41,22 @@ To check the default configuration, run:
 git sv cfg default
 ```
 
-###### Repository
-
-Create a `.gitsv/config.yml` file on the root of your repository, e.g. [.gitsv/config.yml](.gitsv/config.yml).
-
-##### Configuration format
-
 ```Yaml
-version: "1.1" #configuration version
+version: "1.1" # Configuration version.
 
-versioning: # versioning bump
+versioning:
   update-major: [] # Commit types used to bump major.
   update-minor: [feat] # Commit types used to bump minor.
   update-patch: [build, ci, chore, fix, perf, refactor, test] # Commit types used to bump patch.
   # When type is not present on update rules and is unknown (not mapped on commit message types);
-  # if ignore-unknown=false bump patch, if ignore-unknown=true do not bump version
+  # if ignore-unknown=false bump patch, if ignore-unknown=true do not bump version.
   ignore-unknown: false
 
 tag:
   pattern: "%d.%d.%d" # Pattern used to create git tag.
-  filter: "" # Enables you to filter for considerable tags using git pattern syntax
+  filter: "" # Enables you to filter for considerable tags using git pattern syntax.
 
 release-notes:
-  # Deprecated!!! please use 'sections' instead!
-  # Headers names for release notes markdown. To disable a section just remove the header
-  # line. It's possible to add other commit types, the release note will be created
-  # respecting the following order: feat, fix, refactor, perf, test, build, ci, chore, docs, style, breaking-change.
-  headers:
-    breaking-change: Breaking Changes
-    feat: Features
-    fix: Bug Fixes
-
   sections: # Array with each section of release note. Check template section for more information.
     - name: Features # Name used on section.
       section-type: commits # Type of the section, supported types: commits, breaking-changes.
@@ -99,6 +75,7 @@ branches: # Git branches config.
   skip-detached: false # Set true if a detached branch should be ignored on commit message validation.
 
 commit-message:
+  # Supported commit types.
   types: [
       build,
       ci,
@@ -111,7 +88,7 @@ commit-message:
       revert,
       style,
       test,
-    ] # Supported commit types.
+    ]
   header-selector: "" # You can put in a regex here to select only a certain part of the commit message. Please define a regex group 'header'.
   scope:
     # Define supported scopes, if blank, scope will not be validated, if not, only scope listed will be valid.
@@ -127,7 +104,7 @@ commit-message:
     regex: "[A-Z]+-[0-9]+" # Regex for issue id.
 ```
 
-#### Templates
+### Templates
 
 **git-sv** uses _go templates_ to format the output for `release-notes` and `changelog`, to see how the default template is configured check [template directory](https://github.com/thegeeklab/git-sv/tree/main/templates/assets). It's possible to overwrite the default configuration by adding `.gitsv/templates` on your repository.
 
@@ -140,7 +117,7 @@ commit-message:
 
 Everything inside `.gitsv/templates` will be loaded, so it's possible to add more files to be used as needed.
 
-##### Variables
+#### Variables
 
 To execute the template the `releasenotes-md.tpl` will receive a single `ReleaseNote` and `changelog-md.tpl` will receive a list of `ReleaseNote` as variables.
 
@@ -153,25 +130,7 @@ Each `ReleaseNoteSection` will be configured according with `release-notes.secti
 
 > :warning: currently only `commits` and `breaking-changes` are supported as `section-types`, using a different value for this field will make the section to be removed from the template variables.
 
-### Running
-
-Run `git-sv` to get the list of available parameters:
-
-```Shell
-git-sv
-```
-
-#### Run as git command
-
-If `git-sv` is configured on your path, you can use it like a git command:
-
-```Shell
-git sv
-git sv current-version
-git sv next-version
-```
-
-#### Usage
+## Usage
 
 Use `--help` or `-h` to get usage information, don't forget that some commands have unique options too:
 
@@ -204,7 +163,15 @@ GLOBAL OPTIONS:
    --version, -v  print the version
 ```
 
-##### Use range
+If `git-sv` is configured on your path, you can also use it like a git command.
+
+```Shell
+git sv
+git sv current-version
+git sv next-version
+```
+
+### Ranges
 
 Commands like `commit-log` and `commit-notes` has a range option. Supported range types are: `tag`, `date` and `hash`.
 
