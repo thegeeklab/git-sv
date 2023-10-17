@@ -21,6 +21,7 @@ var (
 func main() {
 	gsv := app.New()
 
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	cli.VersionPrinter = func(c *cli.Context) {
 		fmt.Printf("%s version=%s date=%s\n", c.App.Name, c.App.Version, BuildDate)
 	}
@@ -38,8 +39,6 @@ func main() {
 			},
 		},
 		Before: func(ctx *cli.Context) error {
-			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
 			lvl, err := zerolog.ParseLevel(gsv.Settings.LogLevel)
 			if err != nil {
 				return err
