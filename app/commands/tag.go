@@ -14,8 +14,13 @@ func TagFlags(settings *app.TagSettings) []cli.Flag {
 		&cli.BoolFlag{
 			Name:        "annotate",
 			Aliases:     []string{"a"},
-			Usage:       "ignore size parameter, get changelog for every tag",
+			Usage:       "make an annotated tag object",
 			Destination: &settings.Annotate,
+		},
+		&cli.BoolFlag{
+			Name:        "local",
+			Usage:       "create local tag only",
+			Destination: &settings.DryRun,
 		},
 	}
 }
@@ -41,7 +46,7 @@ func TagHandler(g app.GitSV, settings *app.TagSettings) cli.ActionFunc {
 			return nil
 		}
 
-		tagname, err := g.Tag(*nextVer, settings.Annotate)
+		tagname, err := g.Tag(*nextVer, settings.Annotate, settings.DryRun)
 		if err != nil {
 			return fmt.Errorf("error generating tag version: %s: %w", nextVer.String(), err)
 		}

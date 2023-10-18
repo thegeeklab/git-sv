@@ -51,6 +51,7 @@ type CommitLogSettings struct {
 
 type TagSettings struct {
 	Annotate bool
+	DryRun   bool
 }
 
 // Config cli yaml config.
