@@ -19,6 +19,7 @@ type Settings struct {
 	ReleaseNotesSettings ReleaseNotesSettings
 	CommitNotesSettings  CommitNotesSettings
 	CommitLogSettings    CommitLogSettings
+	TagSettings          TagSettings
 }
 
 type ChangelogSettings struct {
@@ -46,6 +47,10 @@ type CommitLogSettings struct {
 	Range string
 	Start string
 	End   string
+}
+
+type TagSettings struct {
+	Annotate bool
 }
 
 // Config cli yaml config.
