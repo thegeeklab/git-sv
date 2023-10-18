@@ -20,7 +20,7 @@ func TagFlags(settings *app.TagSettings) []cli.Flag {
 		&cli.BoolFlag{
 			Name:        "local",
 			Usage:       "create local tag only",
-			Destination: &settings.DryRun,
+			Destination: &settings.Local,
 		},
 	}
 }
@@ -46,7 +46,7 @@ func TagHandler(g app.GitSV, settings *app.TagSettings) cli.ActionFunc {
 			return nil
 		}
 
-		tagname, err := g.Tag(*nextVer, settings.Annotate, settings.DryRun)
+		tagname, err := g.Tag(*nextVer, settings.Annotate, settings.Local)
 		if err != nil {
 			return fmt.Errorf("error generating tag version: %s: %w", nextVer.String(), err)
 		}
