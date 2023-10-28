@@ -77,8 +77,7 @@ func (p BaseReleaseNoteProcessor) Create(
 			sections[sectionCfg.Name] = section
 		}
 
-		if commit.Message.BreakingMessage() != "" {
-			// TODO: if no message found, should use description instead?
+		if commit.Message.IsBreakingChange {
 			breakingChanges = append(breakingChanges, commit.Message.BreakingMessage())
 		}
 	}

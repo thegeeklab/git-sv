@@ -604,7 +604,7 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"breaking change with exclamation mark",
+			"breaking change with empty body",
 			ccfg,
 			"feat!: something new", "",
 			CommitMessage{
@@ -613,7 +613,9 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 				Description:      "something new",
 				Body:             "",
 				IsBreakingChange: true,
-				Metadata:         map[string]string{},
+				Metadata: map[string]string{
+					BreakingChangeMetadataKey: "something new",
+				},
 			},
 		},
 		{
