@@ -69,7 +69,7 @@ generate:
 
 .PHONY: test
 test:
-	$(GO) run $(GOTESTSUM_PACKAGE) -- -coverprofile=coverage.out $(PACKAGES)
+	$(GO) run $(GOTESTSUM_PACKAGE) --no-color=false -- -coverprofile=coverage.out $(PACKAGES)
 
 .PHONY: build
 build: $(DIST)/$(EXECUTABLE)
