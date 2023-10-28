@@ -9,6 +9,7 @@ steps:
   lint:
     image: docker.io/library/golang:1.21
     commands:
+      - echo $CI
       - make lint
 
   test:
