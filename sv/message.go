@@ -292,22 +292,22 @@ func removeCarriage(commit string) string {
 // Parse a commit message.
 func (p BaseMessageProcessor) Parse(subject, body string) (CommitMessage, error) {
 	preparedSubject, err := p.prepareHeader(subject)
-	commitBody := removeCarriage(body)
+	m := CommitMessage{}
 
 	if err != nil {
-		return CommitMessage{}, err
+		return m, err
 	}
 
-	commitType, scope, description, hasBreakingChange := parseSubjectMessage(preparedSubject)
-
-	metadata := make(map[string]string)
+	m.Metadata = make(map[string]string)
+	m.Body = removeCarriage(body)
+	m.Type, m.Scope, m.Description, m.IsBreakingChange = parseSubjectMessage(preparedSubject)
 
 	for key, mdCfg := range p.messageCfg.Footer {
 		if mdCfg.Key != "" {
 			prefixes := append([]string{mdCfg.Key}, mdCfg.KeySynonyms...)
 			for _, prefix := range prefixes {
-				if tagValue := extractFooterMetadata(prefix, commitBody, mdCfg.UseHash); tagValue != "" {
-					metadata[key] = tagValue
+				if tagValue := extractFooterMetadata(prefix, m.Body, mdCfg.UseHash); tagValue != "" {
+					m.Metadata[key] = tagValue
 
 					break
 				}
@@ -315,19 +315,16 @@ func (p BaseMessageProcessor) Parse(subject, body string) (CommitMessage, error)
 		}
 	}
 
-	if tagValue := extractFooterMetadata(BreakingChangeFooterKey, commitBody, false); tagValue != "" {
-		metadata[BreakingChangeMetadataKey] = tagValue
-		hasBreakingChange = true
+	if m.IsBreakingChange {
+		m.Metadata[BreakingChangeMetadataKey] = m.Description
 	}
 
-	return CommitMessage{
-		Type:             commitType,
-		Scope:            scope,
-		Description:      description,
-		Body:             commitBody,
-		IsBreakingChange: hasBreakingChange,
-		Metadata:         metadata,
-	}, nil
+	if tagValue := extractFooterMetadata(BreakingChangeFooterKey, m.Body, false); tagValue != "" {
+		m.IsBreakingChange = true
+		m.Metadata[BreakingChangeMetadataKey] = tagValue
+	}
+
+	return m, nil
 }
 
 func (p BaseMessageProcessor) prepareHeader(header string) (string, error) {
@@ -371,11 +368,10 @@ func parseSubjectMessage(message string) (string, string, string, bool) {
 }
 
 func extractFooterMetadata(key, text string, useHash bool) string {
-	var regex *regexp.Regexp
+	regex := regexp.MustCompile(key + ": (.*)")
+
 	if useHash {
 		regex = regexp.MustCompile(key + " (#.*)")
-	} else {
-		regex = regexp.MustCompile(key + ": (.*)")
 	}
 
 	result := regex.FindStringSubmatch(text)
