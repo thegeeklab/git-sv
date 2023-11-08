@@ -98,7 +98,6 @@ linters-settings:
         yaml: kebab
   gofumpt:
     extra-rules: true
-    lang-version: "1.21"
 
 issues:
   exclude-rules:
