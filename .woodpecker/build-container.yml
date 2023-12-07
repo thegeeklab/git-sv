@@ -7,7 +7,7 @@ when:
 
 steps:
   dryrun:
-    image: quay.io/thegeeklab/wp-docker-buildx:1
+    image: quay.io/thegeeklab/wp-docker-buildx:2
     settings:
       containerfile: Containerfile.multiarch
       dry_run: true
@@ -21,7 +21,7 @@ steps:
 
   publish-dockerhub:
     group: container
-    image: quay.io/thegeeklab/wp-docker-buildx:1
+    image: quay.io/thegeeklab/wp-docker-buildx:2
     settings:
       auto_tag: true
       containerfile: Containerfile.multiarch
@@ -42,7 +42,7 @@ steps:
 
   publish-quay:
     group: container
-    image: quay.io/thegeeklab/wp-docker-buildx:1
+    image: quay.io/thegeeklab/wp-docker-buildx:2
     settings:
       auto_tag: true
       containerfile: Containerfile.multiarch
