@@ -913,7 +913,7 @@ func Test_prepareHeader(t *testing.T) {
 		},
 		{
 			"matching non-conventional with invalid regex",
-			"Merged PR (\\d+): (?<header>.*)",
+			"Merged PR (\\d+): (<header>.*)",
 			"Merged PR 123: something",
 			"",
 			true,
