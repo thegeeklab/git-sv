@@ -45,7 +45,7 @@ func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
 
 //nolint:gocognit
 func ChangelogHandler(g app.GitSV, settings *app.ChangelogSettings) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ *cli.Context) error {
 		tags, err := g.Tags()
 		if err != nil {
 			return err

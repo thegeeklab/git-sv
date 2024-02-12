@@ -385,6 +385,7 @@ func TestBaseMessageProcessor_Enhance(t *testing.T) {
 
 				return
 			}
+
 			if got != tt.want {
 				t.Errorf("BaseMessageProcessor.Enhance() = %v, want %v", got, tt.want)
 			}
@@ -416,6 +417,7 @@ func TestBaseMessageProcessor_IssueID(t *testing.T) {
 
 				return
 			}
+
 			if got != tt.want {
 				t.Errorf("BaseMessageProcessor.IssueID() = %v, want %v", got, tt.want)
 			}
@@ -781,9 +783,11 @@ func TestBaseMessageProcessor_Format(t *testing.T) {
 			if got != tt.wantHeader {
 				t.Errorf("BaseMessageProcessor.Format() header got = %v, want %v", got, tt.wantHeader)
 			}
+
 			if got1 != tt.wantBody {
 				t.Errorf("BaseMessageProcessor.Format() body got = %v, want %v", got1, tt.wantBody)
 			}
+
 			if got2 != tt.wantFooter {
 				t.Errorf("BaseMessageProcessor.Format() footer got = %v, want %v", got2, tt.wantFooter)
 			}
@@ -815,6 +819,7 @@ func Test_splitCommitMessageContent(t *testing.T) {
 			if got != tt.wantSubject {
 				t.Errorf("splitCommitMessageContent() subject got = %v, want %v", got, tt.wantSubject)
 			}
+
 			if got1 != tt.wantBody {
 				t.Errorf("splitCommitMessageContent() body got1 = [%v], want [%v]", got1, tt.wantBody)
 			}
@@ -842,12 +847,15 @@ func Test_parseSubjectMessage(t *testing.T) {
 			if ctype != tt.wantType {
 				t.Errorf("parseSubjectMessage() type got = %v, want %v", ctype, tt.wantType)
 			}
+
 			if scope != tt.wantScope {
 				t.Errorf("parseSubjectMessage() scope got = %v, want %v", scope, tt.wantScope)
 			}
+
 			if description != tt.wantDescription {
 				t.Errorf("parseSubjectMessage() description got = %v, want %v", description, tt.wantDescription)
 			}
+
 			if hasBreakingChange != tt.wantHasBreakingChange {
 				t.Errorf("parseSubjectMessage() hasBreakingChange got = %v, want %v", hasBreakingChange, tt.wantHasBreakingChange)
 			}
@@ -927,6 +935,7 @@ func Test_prepareHeader(t *testing.T) {
 			if tt.wantError && err == nil {
 				t.Errorf("prepareHeader() err got = %v, want not nil", err)
 			}
+
 			if header != tt.wantHeader {
 				t.Errorf("prepareHeader() header got = %v, want %v", header, tt.wantHeader)
 			}

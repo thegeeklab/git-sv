@@ -31,7 +31,7 @@ func ReleaseNotesFlags(settings *app.ReleaseNotesSettings) []cli.Flag {
 }
 
 func ReleaseNotesHandler(g app.GitSV, settings *app.ReleaseNotesSettings) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ *cli.Context) error {
 		var (
 			commits   []sv.CommitLog
 			rnVersion *semver.Version

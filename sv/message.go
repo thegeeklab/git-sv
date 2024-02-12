@@ -392,6 +392,7 @@ func hasFooter(message string) bool {
 		if lines > 0 && r.MatchString(scanner.Text()) {
 			return true
 		}
+
 		lines++
 	}
 

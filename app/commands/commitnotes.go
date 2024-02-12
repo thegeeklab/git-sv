@@ -39,7 +39,7 @@ func CommitNotesFlags(settings *app.CommitNotesSettings) []cli.Flag {
 }
 
 func CommitNotesHandler(g app.GitSV, settings *app.CommitNotesSettings) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ *cli.Context) error {
 		var date time.Time
 
 		lr, err := logRange(g, settings.Range, settings.Start, settings.End)

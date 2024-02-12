@@ -26,7 +26,7 @@ func TagFlags(settings *app.TagSettings) []cli.Flag {
 }
 
 func TagHandler(g app.GitSV, settings *app.TagSettings) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ *cli.Context) error {
 		lastTag := g.LastTag()
 
 		currentVer, err := sv.ToVersion(lastTag)
