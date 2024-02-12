@@ -49,7 +49,7 @@ func CommitLogFlags(settings *app.CommitLogSettings) []cli.Flag {
 }
 
 func CommitLogHandler(g app.GitSV, settings *app.CommitLogSettings) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ *cli.Context) error {
 		var (
 			commits []sv.CommitLog
 			err     error

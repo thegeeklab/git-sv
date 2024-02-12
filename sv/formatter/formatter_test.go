@@ -114,6 +114,7 @@ func Test_checkTemplatesExecution(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.template, func(t *testing.T) {
 			var b bytes.Buffer
+
 			err := tpls.ExecuteTemplate(&b, tt.template, tt.variables)
 			if err != nil {
 				t.Errorf("invalid template err = %v", err)

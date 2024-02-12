@@ -9,7 +9,7 @@ import (
 )
 
 func ConfigDefaultHandler() cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ *cli.Context) error {
 		cfg := app.GetDefault()
 
 		content, err := yaml.Marshal(&cfg)
@@ -24,7 +24,7 @@ func ConfigDefaultHandler() cli.ActionFunc {
 }
 
 func ConfigShowHandler(cfg *app.Config) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ *cli.Context) error {
 		content, err := yaml.Marshal(cfg)
 		if err != nil {
 			return err

@@ -115,9 +115,11 @@ func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
 				},
 				CommitMessageConfig{Types: []string{"major", "minor", "patch", "none"}})
 			got, gotUpdated := p.NextVersion(tt.version, tt.commits)
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("SemVerCommitProcessor.NextVersion() Version = %v, want %v", got, tt.want)
 			}
+
 			if tt.wantUpdated != gotUpdated {
 				t.Errorf("SemVerCommitProcessor.NextVersion() Updated = %v, want %v", gotUpdated, tt.wantUpdated)
 			}
@@ -144,6 +146,7 @@ func TestToVersion(t *testing.T) {
 
 				return
 			}
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToVersion() = %v, want %v", got, tt.want)
 			}

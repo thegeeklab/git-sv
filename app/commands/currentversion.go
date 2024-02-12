@@ -9,7 +9,7 @@ import (
 )
 
 func CurrentVersionHandler(gsv app.GitSV) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ *cli.Context) error {
 		lastTag := gsv.LastTag()
 
 		currentVer, err := sv.ToVersion(lastTag)

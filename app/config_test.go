@@ -148,6 +148,7 @@ func Test_merge(t *testing.T) {
 			if err := merge(&tt.dst, tt.src); (err != nil) != tt.wantErr {
 				t.Errorf("merge() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
 			if !reflect.DeepEqual(tt.dst, tt.want) {
 				t.Errorf("merge() = %v, want %v", tt.dst, tt.want)
 			}

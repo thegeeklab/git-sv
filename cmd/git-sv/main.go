@@ -38,7 +38,7 @@ func main() {
 				Destination: &gsv.Settings.LogLevel,
 			},
 		},
-		Before: func(ctx *cli.Context) error {
+		Before: func(_ *cli.Context) error {
 			lvl, err := zerolog.ParseLevel(gsv.Settings.LogLevel)
 			if err != nil {
 				return err
