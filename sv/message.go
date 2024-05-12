@@ -249,7 +249,7 @@ func (p BaseMessageProcessor) IssueID(branch string) (string, error) {
 	}
 
 	groups := r.FindStringSubmatch(branch)
-	if len(groups) != 4 { //nolint:gomnd
+	if len(groups) != 4 { //nolint:mnd
 		return "", nil
 	}
 
@@ -360,7 +360,7 @@ func parseSubjectMessage(message string) (string, string, string, bool) {
 	regex := regexp.MustCompile(`([a-z]+)(\((.*)\))?(!)?: (.*)`)
 
 	result := regex.FindStringSubmatch(message)
-	if len(result) != 6 { //nolint:gomnd
+	if len(result) != 6 { //nolint:mnd
 		return "", "", message, false
 	}
 
@@ -375,7 +375,7 @@ func extractFooterMetadata(key, text string, useHash bool) string {
 	}
 
 	result := regex.FindStringSubmatch(text)
-	if len(result) < 2 { //nolint:gomnd
+	if len(result) < 2 { //nolint:mnd
 		return ""
 	}
 

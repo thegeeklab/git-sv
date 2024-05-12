@@ -14,7 +14,7 @@ func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
 	return []cli.Flag{
 		&cli.IntFlag{
 			Name:        "size",
-			Value:       10, //nolint:gomnd
+			Value:       10, //nolint:mnd
 			Aliases:     []string{"n"},
 			Destination: &settings.Size,
 			Usage:       "get changelog from last 'n' tags",
