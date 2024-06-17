@@ -13,7 +13,7 @@ Semantic versioning tool for git based on conventional commits.
 
 ## Installation
 
-Prebuilt multiarch binaries are available for Linux only.
+Prebuilt multi-arch binaries are available for Linux only.
 
 ```Shell
 curl -SsfL https://github.com/thegeeklab/git-sv/releases/latest/download/git-sv-linux-amd64 -o /usr/local/bin/git-sv
@@ -149,12 +149,12 @@ COMMANDS:
    config, cfg                   cli configuration
    current-version, cv           get last released version from git
    next-version, nv              generate the next version based on git commit messages
-   commit-log, cl                list all commit logs according to range as jsons
+   commit-log, cl                list all commit logs according to range as json
    commit-notes, cn              generate a commit notes according to range
    release-notes, rn             generate release notes
    changelog, cgl                generate changelog
    tag, tg                       generate tag with version based on git commit messages
-   commit, cmt                   execute git commit with convetional commit message helper
+   commit, cmt                   execute git commit with conventional commit message helper
    validate-commit-message, vcm  use as prepare-commit-message hook to validate and enhance commit message
    help, h                       Shows a list of commands or help for one command
 
