@@ -13,7 +13,7 @@ Semantic versioning tool for git based on conventional commits.
 
 ## Installation
 
-Prebuilt multi-arch binaries are available for Linux only.
+Prebuilt multi-arch binaries are available for Linux and macOS.
 
 ```Shell
 curl -SsfL https://github.com/thegeeklab/git-sv/releases/latest/download/git-sv-linux-amd64 -o /usr/local/bin/git-sv
