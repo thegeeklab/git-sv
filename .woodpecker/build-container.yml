@@ -7,7 +7,7 @@ when:
 
 steps:
   - name: dryrun
-    image: quay.io/thegeeklab/wp-docker-buildx:4
+    image: quay.io/thegeeklab/wp-docker-buildx:5
     settings:
       containerfile: Containerfile.multiarch
       dry_run: true
@@ -20,7 +20,7 @@ steps:
       - event: [pull_request]
 
   - name: publish-dockerhub
-    image: quay.io/thegeeklab/wp-docker-buildx:4
+    image: quay.io/thegeeklab/wp-docker-buildx:5
     group: container
     settings:
       auto_tag: true
@@ -41,7 +41,7 @@ steps:
           - ${CI_REPO_DEFAULT_BRANCH}
 
   - name: publish-quay
-    image: quay.io/thegeeklab/wp-docker-buildx:4
+    image: quay.io/thegeeklab/wp-docker-buildx:5
     group: container
     settings:
       auto_tag: true
