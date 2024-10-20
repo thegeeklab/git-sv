@@ -20,9 +20,6 @@ import (
 const (
 	logSeparator = "###"
 	endLine      = "~~~"
-
-	configFilename = "config.yml"
-	configDir      = ".gitsv"
 )
 
 var errUnknownGitError = errors.New("git command failed")
@@ -68,9 +65,12 @@ type GitSV struct {
 
 // New constructor.
 func New() GitSV {
+	configDir := ".gitsv"
+	configFilenames := []string{"config.yaml", "config.yml"}
+
 	g := GitSV{
 		Settings: &Settings{},
-		Config:   NewConfig(configDir, configFilename),
+		Config:   NewConfig(configDir, configFilenames),
 	}
 
 	g.MessageProcessor = sv.NewMessageProcessor(g.Config.CommitMessage, g.Config.Branches)

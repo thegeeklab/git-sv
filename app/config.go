@@ -56,7 +56,6 @@ type TagSettings struct {
 
 // Config cli yaml config.
 type Config struct {
-	Version       string                 `yaml:"version"`
 	LogLevel      string                 `yaml:"log-level"`
 	Versioning    sv.VersioningConfig    `yaml:"versioning"`
 	Tag           TagConfig              `yaml:"tag"`
@@ -71,14 +70,18 @@ type TagConfig struct {
 	Filter  *string `yaml:"filter"`
 }
 
-func NewConfig(configDir, configFilename string) *Config {
+func NewConfig(configDir string, configFilenames []string) *Config {
 	workDir, _ := os.Getwd()
 	cfg := GetDefault()
 
-	repoCfgFilepath := filepath.Join(workDir, configDir, configFilename)
-	if repoCfg, err := readFile(repoCfgFilepath); err == nil {
-		if merr := merge(cfg, migrate(repoCfg, repoCfgFilepath)); merr != nil {
-			log.Fatal().Err(merr).Msg("failed to merge repo config")
+	for _, filename := range configFilenames {
+		repoCfgFilepath := filepath.Join(workDir, configDir, filename)
+		if repoCfg, err := readFile(repoCfgFilepath); err == nil {
+			if merr := merge(cfg, repoCfg); merr != nil {
+				log.Fatal().Err(merr).Msg("failed to merge repo config")
+			}
+
+			break
 		}
 	}
 
@@ -107,7 +110,6 @@ func GetDefault() *Config {
 	filter := ""
 
 	return &Config{
-		Version: "1.1",
 		Versioning: sv.VersioningConfig{
 			UpdateMajor:   []string{},
 			UpdateMinor:   []string{"feat"},
@@ -172,9 +174,4 @@ func (t *mergeTransformer) Transformer(typ reflect.Type) func(dst, src reflect.V
 	}
 
 	return nil
-}
-
-//nolint:revive
-func migrate(cfg Config, filename string) Config {
-	return cfg
 }
