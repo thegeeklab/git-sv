@@ -42,8 +42,6 @@ git sv cfg default
 ```
 
 ```Yaml
-version: "1.1" # Configuration version.
-
 versioning:
   update-major: [] # Commit types used to bump major.
   update-minor: [feat] # Commit types used to bump minor.

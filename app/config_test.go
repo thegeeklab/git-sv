@@ -22,16 +22,16 @@ func Test_merge(t *testing.T) {
 	}{
 		{
 			"overwrite string",
-			Config{Version: "a"},
-			Config{Version: "b"},
-			Config{Version: "b"},
+			Config{LogLevel: "info"},
+			Config{LogLevel: "warn"},
+			Config{LogLevel: "warn"},
 			false,
 		},
 		{
 			"default string",
-			Config{Version: "a"},
-			Config{Version: ""},
-			Config{Version: "a"},
+			Config{LogLevel: "info"},
+			Config{LogLevel: ""},
+			Config{LogLevel: "info"},
 			false,
 		},
 		{
@@ -120,21 +120,21 @@ func Test_merge(t *testing.T) {
 		{
 			"overwrite tag config",
 			Config{
-				Version: "a",
+				LogLevel: "info",
 				Tag: TagConfig{
 					Pattern: &nonEmptyStr,
 					Filter:  &nonEmptyStr,
 				},
 			},
 			Config{
-				Version: "",
+				LogLevel: "",
 				Tag: TagConfig{
 					Pattern: &emptyStr,
 					Filter:  &emptyStr,
 				},
 			},
 			Config{
-				Version: "a",
+				LogLevel: "info",
 				Tag: TagConfig{
 					Pattern: &emptyStr,
 					Filter:  &emptyStr,
