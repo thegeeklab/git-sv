@@ -33,7 +33,7 @@ make build
 The configuration is loaded from a YAML file in the following order (last wins):
 
 - built-in default
-- `.gitsv/config.yml` in repository root
+- `.gitsv/config.yaml` or `.gitsv/config.yml` in repository root (first found)
 
 To check the default configuration, run:
 
