@@ -189,7 +189,7 @@ git-sv commit-log --range hash --start 7ea9306~1 --end c444318
 git-sv commit-log --range tag
 ```
 
-### CI Requirements
+### CI systems
 
 For `git-sv` to work, the git tag information must be present. Some CI systems omit the tags by default during the clone and it might be necessary to fetch tags manually.
 
