@@ -191,15 +191,14 @@ git-sv commit-log --range tag
 
 ### CI Requirements
 
-To make `git-sv` work, git tag information must be present.
-Some CI applications omit cloning tags by default, so double-check if this is the case before using `git-sv` during CI runs.
+For `git-sv` to work, the git tag information must be present. Some CI systems omit the tags by default during the clone and it might be necessary to fetch tags manually.
 
-Note for Woodpecker CI users: the default clone plugin skips tags.
-You either need to
+#### Woodpecker CI
 
-- define a custom clone step with `tags: true` when using `plugins/git-clone`
-- use a custom clone plugin like [thegeeklab/wp-git-clone](https://github.com/thegeeklab/wp-git-clone)
-- perform a manual clone inside a command
+The default clone plugin skips tags. This behavior can be changed by one of the following methods:
+
+- define a custom clone step with `tags: true` when using `plugins/git-clone
+- perform a manual clone within a command
 
 ## Contributors
 
