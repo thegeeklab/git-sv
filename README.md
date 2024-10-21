@@ -189,6 +189,17 @@ git-sv commit-log --range hash --start 7ea9306~1 --end c444318
 git-sv commit-log --range tag
 ```
 
+### CI systems
+
+For `git-sv` to work, the git tag information must be present. Some CI systems omit the tags by default during the clone and it might be necessary to fetch tags manually.
+
+#### Woodpecker CI
+
+The default clone plugin skips tags. This behavior can be changed by one of the following methods:
+
+- define a custom clone step with `tags: true` when using `plugins/git-clone
+- perform a manual clone within a command
+
 ## Contributors
 
 Special thanks to all [contributors](https://github.com/thegeeklab/git-sv/graphs/contributors). If you would like to contribute, please see the [instructions](https://github.com/thegeeklab/git-sv/blob/main/CONTRIBUTING.md).
