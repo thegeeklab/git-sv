@@ -16,14 +16,20 @@ Semantic versioning tool for git based on conventional commits.
 Prebuilt multi-arch binaries are available for Linux and macOS.
 
 ```Shell
-# linux amd64
+# Linux amd64
 curl -SsfL https://github.com/thegeeklab/git-sv/releases/latest/download/git-sv-linux-amd64 -o ~/.local/bin/git-sv
-chmod +x /usr/local/bin/git-sv
+chmod +x ~/.local/bin/git-sv
 ```
 
 ```Shell
-# macOS
+# macOS arm
 curl -SsfL https://github.com/thegeeklab/git-sv/releases/latest/download/git-sv-darwin-10.12-arm64 -o ~/.local/bin/git-sv
+chmod +x ~/.local/bin/git-sv
+```
+
+```Shell
+# macOS intel
+curl -SsfL https://github.com/thegeeklab/git-sv/releases/latest/download/git-sv-darwin-10.12-amd64 -o ~/.local/bin/git-sv
 chmod +x ~/.local/bin/git-sv
 ```
 
