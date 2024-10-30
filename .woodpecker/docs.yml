@@ -8,13 +8,11 @@ when:
 steps:
   - name: markdownlint
     image: quay.io/thegeeklab/markdownlint-cli
-    group: test
     commands:
       - markdownlint 'README.md' 'CONTRIBUTING.md'
 
   - name: spellcheck
     image: quay.io/thegeeklab/alpine-tools
-    group: test
     commands:
       - spellchecker --files 'docs/**/*.md' 'README.md' 'CONTRIBUTING.md' -d .dictionary -p spell indefinite-article syntax-urls
     environment:
@@ -22,18 +20,17 @@ steps:
 
   - name: link-validation
     image: docker.io/lycheeverse/lychee
-    group: test
     commands:
       - lychee --no-progress --format detailed README.md
 
   - name: pushrm-dockerhub
     image: docker.io/chko/docker-pushrm:1
-    secrets:
-      - source: docker_password
-        target: DOCKER_PASS
-      - source: docker_username
-        target: DOCKER_USER
+    depends_on: [markdownlint, spellcheck, link-validation]
     environment:
+      DOCKER_PASS:
+        from_secret: docker_password
+      DOCKER_USER:
+        from_secret: docker_username
       PUSHRM_FILE: README.md
       PUSHRM_SHORT: Semantic versioning tool for git based on conventional commits
       PUSHRM_TARGET: ${CI_REPO}
@@ -45,10 +42,10 @@ steps:
 
   - name: pushrm-quay
     image: docker.io/chko/docker-pushrm:1
-    secrets:
-      - source: quay_token
-        target: APIKEY__QUAY_IO
+    depends_on: [markdownlint, spellcheck, link-validation]
     environment:
+      APIKEY__QUAY_IO:
+        from_secret: quay_token
       PUSHRM_FILE: README.md
       PUSHRM_TARGET: quay.io/${CI_REPO}
     when:
