@@ -33,6 +33,13 @@ curl -SsfL https://github.com/thegeeklab/git-sv/releases/latest/download/git-sv-
 chmod +x ~/.local/bin/git-sv
 ```
 
+On macOS, you can also use `homebrew`:
+
+```Shell
+brew tap thegeeklab/tap
+brew install git-sv
+```
+
 ## Build
 
 Build the binary from source with the following command:
