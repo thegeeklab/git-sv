@@ -4,7 +4,7 @@ go 1.23.3
 
 require (
 	dario.cat/mergo v1.0.1
-	github.com/Masterminds/semver/v3 v3.3.0
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/rs/zerolog v1.33.0
