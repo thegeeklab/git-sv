@@ -1,0 +1,33 @@
+---
+when:
+  - event: [pull_request, tag]
+  - event: [push, manual]
+    branch:
+      - ${CI_REPO_DEFAULT_BRANCH}
+
+steps:
+  - name: security-build
+    image: quay.io/thegeeklab/wp-docker-buildx:6
+    settings:
+      containerfile: Containerfile.multiarch
+      output: type=oci,dest=oci/${CI_REPO_NAME},tar=false
+      repo: ${CI_REPO}
+      registry_config:
+        from_secret: DOCKER_REGISTRY_CONFIG_PULL
+
+  - name: security-scan
+    image: docker.io/aquasec/trivy
+    depends_on: [security-build]
+    commands:
+      - trivy -v
+      - trivy image --input oci/${CI_REPO_NAME}
+    environment:
+      TRIVY_EXIT_CODE: "1"
+      TRIVY_IGNORE_UNFIXED: "true"
+      TRIVY_NO_PROGRESS: "true"
+      TRIVY_SEVERITY: HIGH,CRITICAL
+      TRIVY_TIMEOUT: 1m
+      TRIVY_DB_REPOSITORY: docker.io/aquasec/trivy-db:2
+
+depends_on:
+  - test
