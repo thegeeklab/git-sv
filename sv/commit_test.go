@@ -21,7 +21,7 @@ func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
 			true,
 			TestVersion("0.0.0"),
 			[]CommitLog{},
-			TestVersion("0.0.0"),
+			TestVersion("0.1.0"),
 			false,
 		},
 		{
@@ -37,7 +37,7 @@ func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
 			true,
 			TestVersion("0.0.0"),
 			[]CommitLog{TestCommitlog("a", map[string]string{}, "a")},
-			TestVersion("0.0.0"),
+			TestVersion("0.1.0"),
 			false,
 		},
 		{
@@ -45,7 +45,7 @@ func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
 			false,
 			TestVersion("0.0.0"),
 			[]CommitLog{TestCommitlog("none", map[string]string{}, "a")},
-			TestVersion("0.0.0"),
+			TestVersion("0.1.0"),
 			false,
 		},
 		{
@@ -53,14 +53,14 @@ func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
 			false,
 			TestVersion("0.0.0"),
 			[]CommitLog{TestCommitlog("a", map[string]string{}, "a")},
-			TestVersion("0.0.1"),
+			TestVersion("0.1.0"),
 			true,
 		},
 		{
 			"patch update",
 			false, TestVersion("0.0.0"),
 			[]CommitLog{TestCommitlog("patch", map[string]string{}, "a")},
-			TestVersion("0.0.1"), true,
+			TestVersion("0.1.0"), true,
 		},
 		{
 			"patch update without version",
