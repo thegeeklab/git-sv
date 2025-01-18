@@ -88,6 +88,10 @@ func (p SemVerCommitProcessor) NextVersion(
 
 	newVersion := updateVersion(*version, versionToUpdate)
 
+	if newVersion.Major() == 0 && newVersion.Minor() == 0 {
+		newVersion = updateVersion(*version, minor)
+	}
+
 	return &newVersion, updated
 }
 
