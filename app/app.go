@@ -18,11 +18,14 @@ import (
 )
 
 const (
-	logSeparator = "###"
-	endLine      = "~~~"
+	logSeparator = ">###"
+	endLine      = ">~~~"
 )
 
-var errUnknownGitError = errors.New("git command failed")
+var (
+	errUnknownGitError  = errors.New("git command failed")
+	errInvalidCommitLog = errors.New("invalid commit log format")
+)
 
 // Tag git tag info.
 type Tag struct {
@@ -265,7 +268,13 @@ func parseLogOutput(messageProcessor sv.MessageProcessor, log string) ([]sv.Comm
 }
 
 func parseCommitLog(messageProcessor sv.MessageProcessor, c string) (sv.CommitLog, error) {
+	logFieldCount := 6
 	content := strings.Split(strings.Trim(c, "\""), logSeparator)
+
+	if len(content) < logFieldCount {
+		return sv.CommitLog{}, fmt.Errorf("%w: missing required fields", errInvalidCommitLog)
+	}
+
 	timestamp, _ := strconv.Atoi(content[1])
 
 	message, err := messageProcessor.Parse(content[4], content[5])
