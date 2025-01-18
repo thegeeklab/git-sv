@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	logSeparator = "###"
-	endLine      = "~~~"
+	logSeparator = ">###"
+	endLine      = ">~~~"
 )
 
 var errUnknownGitError = errors.New("git command failed")
