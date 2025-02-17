@@ -92,6 +92,8 @@ func (g GitSV) LastTag() string {
 		"for-each-ref",
 		fmt.Sprintf("refs/tags/%s", *g.Config.Tag.Filter),
 		"--sort",
+		"-version:refname",
+		"--sort",
 		"-creatordate",
 		"--format",
 		"%(refname:short)",
