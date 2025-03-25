@@ -60,7 +60,7 @@ func ReleaseNotesHandler(g app.GitSV, settings *app.ReleaseNotesSettings) cli.Ac
 		}
 
 		if settings.Out == "" {
-			os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
+			fmt.Fprintf(os.Stdout, "%s\n", output)
 
 			return nil
 		}
