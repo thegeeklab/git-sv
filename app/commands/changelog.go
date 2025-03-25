@@ -97,7 +97,7 @@ func ChangelogHandler(g app.GitSV, settings *app.ChangelogSettings) cli.ActionFu
 		}
 
 		if settings.Out == "" {
-			os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
+			fmt.Fprintf(os.Stdout, "%s\n", output)
 
 			return nil
 		}

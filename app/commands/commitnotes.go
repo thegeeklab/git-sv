@@ -62,7 +62,7 @@ func CommitNotesHandler(g app.GitSV, settings *app.CommitNotesSettings) cli.Acti
 		}
 
 		if settings.End == "" {
-			os.Stdout.WriteString(fmt.Sprintf("%s\n", output))
+			fmt.Fprintf(os.Stdout, "%s\n", output)
 
 			return nil
 		}

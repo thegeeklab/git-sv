@@ -67,7 +67,8 @@ func zeroDate(fmt string, date time.Time) string {
 	return date.Format(fmt)
 }
 
-func getSection(name string, sections []sv.ReleaseNoteSection) sv.ReleaseNoteSection { //nolint:ireturn
+//nolint:ireturn
+func getSection(name string, sections []sv.ReleaseNoteSection) sv.ReleaseNoteSection {
 	for _, section := range sections {
 		if section.SectionName() == name {
 			return section
