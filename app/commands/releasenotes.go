@@ -9,7 +9,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 func ReleaseNotesFlags(settings *app.ReleaseNotesSettings) []cli.Flag {

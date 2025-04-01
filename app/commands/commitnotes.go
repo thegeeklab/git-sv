@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/thegeeklab/git-sv/app"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 func CommitNotesFlags(settings *app.CommitNotesSettings) []cli.Flag {

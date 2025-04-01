@@ -9,7 +9,7 @@ import (
 
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/app/commands"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 //nolint:gochecknoglobals
