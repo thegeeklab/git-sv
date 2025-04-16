@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 var (
@@ -49,7 +50,7 @@ func CommitLogFlags(settings *app.CommitLogSettings) []cli.Flag {
 }
 
 func CommitLogHandler(g app.GitSV, settings *app.CommitLogSettings) cli.ActionFunc {
-	return func(_ *cli.Context) error {
+	return func(_ context.Context, _ *cli.Command) error {
 		var (
 			commits []sv.CommitLog
 			err     error

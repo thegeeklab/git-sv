@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 func ReleaseNotesFlags(settings *app.ReleaseNotesSettings) []cli.Flag {
@@ -31,7 +32,7 @@ func ReleaseNotesFlags(settings *app.ReleaseNotesSettings) []cli.Flag {
 }
 
 func ReleaseNotesHandler(g app.GitSV, settings *app.ReleaseNotesSettings) cli.ActionFunc {
-	return func(_ *cli.Context) error {
+	return func(_ context.Context, _ *cli.Command) error {
 		var (
 			commits   []sv.CommitLog
 			rnVersion *semver.Version

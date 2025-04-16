@@ -1,13 +1,14 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sort"
 
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
@@ -45,7 +46,7 @@ func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
 
 //nolint:gocognit
 func ChangelogHandler(g app.GitSV, settings *app.ChangelogSettings) cli.ActionFunc {
-	return func(_ *cli.Context) error {
+	return func(_ context.Context, _ *cli.Command) error {
 		tags, err := g.Tags()
 		if err != nil {
 			return err
@@ -69,7 +70,7 @@ func ChangelogHandler(g app.GitSV, settings *app.ChangelogSettings) cli.ActionFu
 		}
 
 		for i, tag := range tags {
-			if !settings.All && i >= settings.Size {
+			if !settings.All && int64(i) >= settings.Size {
 				break
 			}
 

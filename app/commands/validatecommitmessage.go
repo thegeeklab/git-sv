@@ -1,13 +1,14 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
 
 	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/app"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 const laxFilePerm = 0o644
@@ -38,7 +39,7 @@ func ValidateCommitMessageFlags() []cli.Flag {
 }
 
 func ValidateCommitMessageHandler(g app.GitSV) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ context.Context, c *cli.Command) error {
 		branch := g.Branch()
 		detached, derr := g.IsDetached()
 

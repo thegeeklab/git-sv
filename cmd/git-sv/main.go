@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -9,7 +10,7 @@ import (
 
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/app/commands"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 //nolint:gochecknoglobals
@@ -22,11 +23,11 @@ func main() {
 	gsv := app.New()
 
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	cli.VersionPrinter = func(c *cli.Context) {
-		fmt.Printf("%s version=%s date=%s\n", c.App.Name, c.App.Version, BuildDate)
+	cli.VersionPrinter = func(c *cli.Command) {
+		fmt.Printf("%s version=%s date=%s\n", c.Name, c.Version, BuildDate)
 	}
 
-	app := &cli.App{
+	app := &cli.Command{
 		Name:    "git-sv",
 		Usage:   "Semantic version for git.",
 		Version: BuildVersion,
@@ -38,22 +39,22 @@ func main() {
 				Destination: &gsv.Settings.LogLevel,
 			},
 		},
-		Before: func(_ *cli.Context) error {
+		Before: func(ctx context.Context, _ *cli.Command) (context.Context, error) {
 			lvl, err := zerolog.ParseLevel(gsv.Settings.LogLevel)
 			if err != nil {
-				return err
+				return ctx, err
 			}
 
 			zerolog.SetGlobalLevel(lvl)
 
-			return nil
+			return ctx, nil
 		},
 		Commands: []*cli.Command{
 			{
 				Name:    "config",
 				Aliases: []string{"cfg"},
 				Usage:   "cli configuration",
-				Subcommands: []*cli.Command{
+				Commands: []*cli.Command{
 					{
 						Name:   "default",
 						Usage:  "show default config",
@@ -136,7 +137,7 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 		},
 	}
 
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run(context.Background(), os.Args); err != nil {
 		log.Fatal().Err(err).Msg("Execution error")
 	}
 }

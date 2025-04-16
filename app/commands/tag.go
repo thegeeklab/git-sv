@@ -1,12 +1,13 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 func TagFlags(settings *app.TagSettings) []cli.Flag {
@@ -26,7 +27,7 @@ func TagFlags(settings *app.TagSettings) []cli.Flag {
 }
 
 func TagHandler(g app.GitSV, settings *app.TagSettings) cli.ActionFunc {
-	return func(_ *cli.Context) error {
+	return func(_ context.Context, _ *cli.Command) error {
 		lastTag := g.LastTag()
 
 		currentVer, err := sv.ToVersion(lastTag)
