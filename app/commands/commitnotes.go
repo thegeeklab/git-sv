@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -39,7 +40,7 @@ func CommitNotesFlags(settings *app.CommitNotesSettings) []cli.Flag {
 }
 
 func CommitNotesHandler(g app.GitSV, settings *app.CommitNotesSettings) cli.ActionFunc {
-	return func(_ *cli.Context) error {
+	return func(_ context.Context, _ *cli.Command) error {
 		var date time.Time
 
 		lr, err := logRange(g, settings.Range, settings.Start, settings.End)

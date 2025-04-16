@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/thegeeklab/git-sv/app"
@@ -54,7 +55,7 @@ func CommitFlags() []cli.Flag {
 }
 
 func CommitHandler(g app.GitSV) cli.ActionFunc {
-	return func(c *cli.Context) error {
+	return func(_ context.Context, c *cli.Command) error {
 		noBreaking := c.Bool("no-breaking")
 		noBody := c.Bool("no-body")
 		noIssue := c.Bool("no-issue")

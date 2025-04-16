@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
@@ -10,7 +11,7 @@ import (
 )
 
 func NextVersionHandler(g app.GitSV) cli.ActionFunc {
-	return func(_ *cli.Context) error {
+	return func(_ context.Context, _ *cli.Command) error {
 		lastTag := g.LastTag()
 
 		currentVer, err := sv.ToVersion(lastTag)

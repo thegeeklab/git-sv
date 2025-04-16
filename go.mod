@@ -6,10 +6,10 @@ require (
 	dario.cat/mergo v1.0.1
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/Masterminds/sprig/v3 v3.3.0
+	github.com/goccy/go-yaml v1.17.1
 	github.com/manifoldco/promptui v0.9.0
 	github.com/rs/zerolog v1.34.0
 	github.com/urfave/cli/v3 v3.1.1
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -26,5 +26,4 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )

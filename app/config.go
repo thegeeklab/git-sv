@@ -7,9 +7,9 @@ import (
 	"reflect"
 
 	"dario.cat/mergo"
+	"github.com/goccy/go-yaml"
 	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/sv"
-	"gopkg.in/yaml.v3"
 )
 
 type Settings struct {
@@ -23,7 +23,7 @@ type Settings struct {
 }
 
 type ChangelogSettings struct {
-	Size    int
+	Size    int64
 	All     bool
 	AddNext bool
 	Strict  bool
