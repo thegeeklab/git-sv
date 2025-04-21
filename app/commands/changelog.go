@@ -13,7 +13,7 @@ import (
 
 func ChangelogFlags(settings *app.ChangelogSettings) []cli.Flag {
 	return []cli.Flag{
-		&cli.IntFlag{
+		&cli.Int64Flag{
 			Name:        "size",
 			Value:       10, //nolint:mnd
 			Aliases:     []string{"n"},
