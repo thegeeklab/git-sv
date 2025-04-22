@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/thegeeklab/git-sv/sv"
 	"github.com/thegeeklab/git-sv/templates"
 )
@@ -47,22 +48,50 @@ func TestBaseOutputFormatter_FormatReleaseNote(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"with date", emptyReleaseNote("1.0.0", date.Truncate(time.Minute)), dateChangelog, false},
-		{"without date", emptyReleaseNote("1.0.0", time.Time{}.Truncate(time.Minute)), emptyDateChangelog, false},
-		{"without version", emptyReleaseNote("", date.Truncate(time.Minute)), emptyVersionChangelog, false},
-		{"non versioning tag", emptyReleaseNote("abc", date.Truncate(time.Minute)), nonVersioningChangelog, false},
-		{"full changelog", fullReleaseNote("1.0.0", date.Truncate(time.Minute)), fullChangeLog, false},
+		{
+			name:    "with date",
+			input:   emptyReleaseNote("1.0.0", date.Truncate(time.Minute)),
+			want:    dateChangelog,
+			wantErr: false,
+		},
+		{
+			name:    "without date",
+			input:   emptyReleaseNote("1.0.0", time.Time{}.Truncate(time.Minute)),
+			want:    emptyDateChangelog,
+			wantErr: false,
+		},
+		{
+			name:    "without version",
+			input:   emptyReleaseNote("", date.Truncate(time.Minute)),
+			want:    emptyVersionChangelog,
+			wantErr: false,
+		},
+		{
+			name:    "non versioning tag",
+			input:   emptyReleaseNote("abc", date.Truncate(time.Minute)),
+			want:    nonVersioningChangelog,
+			wantErr: false,
+		},
+		{
+			name:    "full changelog",
+			input:   fullReleaseNote("1.0.0", date.Truncate(time.Minute)),
+			want:    fullChangeLog,
+			wantErr: false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewOutputFormatter(tmpls).FormatReleaseNote(tt.input)
-			if string(got) != tt.want {
-				t.Errorf("BaseOutputFormatter.FormatReleaseNote() = %v, want %v", got, tt.want)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				return
 			}
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BaseOutputFormatter.FormatReleaseNote() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, string(got))
 		})
 	}
 }
@@ -104,11 +133,20 @@ func fullReleaseNote(tag string, date time.Time) sv.ReleaseNote {
 func Test_checkTemplatesExecution(t *testing.T) {
 	tpls := NewOutputFormatter(tmpls).templates
 	tests := []struct {
+		name      string
 		template  string
 		variables interface{}
 	}{
-		{"changelog-md.tpl", changelogVariables("v1.0.0", "v1.0.1")},
-		{"releasenotes-md.tpl", releaseNotesVariables("v1.0.0")},
+		{
+			name:      "changelog-md.tpl",
+			template:  "changelog-md.tpl",
+			variables: changelogVariables("v1.0.0", "v1.0.1"),
+		},
+		{
+			name:      "releasenotes-md.tpl",
+			template:  "releasenotes-md.tpl",
+			variables: releaseNotesVariables("v1.0.0"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -116,15 +154,9 @@ func Test_checkTemplatesExecution(t *testing.T) {
 			var b bytes.Buffer
 
 			err := tpls.ExecuteTemplate(&b, tt.template, tt.variables)
-			if err != nil {
-				t.Errorf("invalid template err = %v", err)
 
-				return
-			}
-
-			if len(b.Bytes()) == 0 {
-				t.Errorf("empty template")
-			}
+			assert.NoError(t, err)
+			assert.NotEmpty(t, b.Bytes())
 		})
 	}
 }
