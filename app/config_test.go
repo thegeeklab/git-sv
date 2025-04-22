@@ -8,11 +8,6 @@ import (
 )
 
 func Test_merge(t *testing.T) {
-	boolFalse := false
-	boolTrue := true
-	emptyStr := ""
-	nonEmptyStr := "something"
-
 	tests := []struct {
 		name    string
 		dst     Config
@@ -21,128 +16,129 @@ func Test_merge(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"overwrite string",
-			Config{LogLevel: "info"},
-			Config{LogLevel: "warn"},
-			Config{LogLevel: "warn"},
-			false,
+			name:    "overwrite string",
+			dst:     Config{LogLevel: "info"},
+			src:     Config{LogLevel: "warn"},
+			want:    Config{LogLevel: "warn"},
+			wantErr: false,
 		},
 		{
-			"default string",
-			Config{LogLevel: "info"},
-			Config{LogLevel: ""},
-			Config{LogLevel: "info"},
-			false,
+			name:    "default string",
+			dst:     Config{LogLevel: "info"},
+			src:     Config{LogLevel: ""},
+			want:    Config{LogLevel: "info"},
+			wantErr: false,
 		},
 		{
-			"overwrite list",
-			Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
-			Config{Branches: sv.BranchesConfig{Skip: []string{"c", "d"}}},
-			Config{Branches: sv.BranchesConfig{Skip: []string{"c", "d"}}},
-			false,
+			name:    "overwrite list",
+			dst:     Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
+			src:     Config{Branches: sv.BranchesConfig{Skip: []string{"c", "d"}}},
+			want:    Config{Branches: sv.BranchesConfig{Skip: []string{"c", "d"}}},
+			wantErr: false,
 		},
 		{
-			"overwrite list with empty",
-			Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
-			Config{Branches: sv.BranchesConfig{Skip: make([]string, 0)}},
-			Config{Branches: sv.BranchesConfig{Skip: make([]string, 0)}},
-			false,
+			name:    "overwrite list with empty",
+			dst:     Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
+			src:     Config{Branches: sv.BranchesConfig{Skip: make([]string, 0)}},
+			want:    Config{Branches: sv.BranchesConfig{Skip: make([]string, 0)}},
+			wantErr: false,
 		},
 		{
-			"default list",
-			Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
-			Config{Branches: sv.BranchesConfig{Skip: nil}},
-			Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
-			false,
+			name:    "default list",
+			dst:     Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
+			src:     Config{Branches: sv.BranchesConfig{Skip: nil}},
+			want:    Config{Branches: sv.BranchesConfig{Skip: []string{"a", "b"}}},
+			wantErr: false,
 		},
 
 		{
-			"overwrite pointer bool false",
-			Config{Branches: sv.BranchesConfig{SkipDetached: &boolFalse}},
-			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
-			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
-			false,
+			name:    "overwrite pointer bool false",
+			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(false)}},
+			src:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
+			want:    Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
+			wantErr: false,
 		},
 		{
-			"overwrite pointer bool true",
-			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
-			Config{Branches: sv.BranchesConfig{SkipDetached: &boolFalse}},
-			Config{Branches: sv.BranchesConfig{SkipDetached: &boolFalse}},
-			false,
+			name:    "overwrite pointer bool true",
+			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
+			src:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(false)}},
+			want:    Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(false)}},
+			wantErr: false,
 		},
 		{
-			"default pointer bool",
-			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
-			Config{Branches: sv.BranchesConfig{SkipDetached: nil}},
-			Config{Branches: sv.BranchesConfig{SkipDetached: &boolTrue}},
-			false,
+			name:    "default pointer bool",
+			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
+			src:     Config{Branches: sv.BranchesConfig{SkipDetached: nil}},
+			want:    Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
+			wantErr: false,
 		},
 		{
-			"merge maps",
-			Config{CommitMessage: sv.CommitMessageConfig{
+			name: "merge maps",
+			dst: Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
-			Config{CommitMessage: sv.CommitMessageConfig{
+			src: Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: map[string]sv.CommitMessageFooterConfig{"issue2": {Key: "jira2"}},
 			}},
-			Config{CommitMessage: sv.CommitMessageConfig{Footer: map[string]sv.CommitMessageFooterConfig{
+			want: Config{CommitMessage: sv.CommitMessageConfig{Footer: map[string]sv.CommitMessageFooterConfig{
 				"issue":  {Key: "jira"},
 				"issue2": {Key: "jira2"},
 			}}},
-			false,
+			wantErr: false,
 		},
 		{
-			"default maps",
-			Config{CommitMessage: sv.CommitMessageConfig{
+			name: "default maps",
+			dst: Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
-			Config{CommitMessage: sv.CommitMessageConfig{
+			src: Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: nil,
 			}},
-			Config{CommitMessage: sv.CommitMessageConfig{
+			want: Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
-			false,
+			wantErr: false,
 		},
 		{
-			"merge empty maps",
-			Config{CommitMessage: sv.CommitMessageConfig{
+			name: "merge empty maps",
+			dst: Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
-			Config{CommitMessage: sv.CommitMessageConfig{
+			src: Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: map[string]sv.CommitMessageFooterConfig{},
 			}},
-			Config{CommitMessage: sv.CommitMessageConfig{
+			want: Config{CommitMessage: sv.CommitMessageConfig{
 				Footer: map[string]sv.CommitMessageFooterConfig{"issue": {Key: "jira"}},
 			}},
-			false,
+			wantErr: false,
 		},
 		{
-			"overwrite tag config",
-			Config{
+			name: "overwrite tag config",
+			dst: Config{
 				LogLevel: "info",
 				Tag: TagConfig{
-					Pattern: &nonEmptyStr,
-					Filter:  &nonEmptyStr,
+					Pattern: toPtr("something"),
+					Filter:  toPtr("something"),
 				},
 			},
-			Config{
+			src: Config{
 				LogLevel: "",
 				Tag: TagConfig{
-					Pattern: &emptyStr,
-					Filter:  &emptyStr,
+					Pattern: toPtr(""),
+					Filter:  toPtr(""),
 				},
 			},
-			Config{
+			want: Config{
 				LogLevel: "info",
 				Tag: TagConfig{
-					Pattern: &emptyStr,
-					Filter:  &emptyStr,
+					Pattern: toPtr(""),
+					Filter:  toPtr(""),
 				},
 			},
-			false,
+			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := merge(&tt.dst, tt.src); (err != nil) != tt.wantErr {
@@ -154,4 +150,9 @@ func Test_merge(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helper function to create a pointer to any type.
+func toPtr[T any](v T) *T {
+	return &v
 }

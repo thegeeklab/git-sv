@@ -20,7 +20,7 @@ type testRepo struct {
 }
 
 // setupGitRepo creates a temporary git repository with optional commit history
-// and returns the temp directory path
+// and returns the temp directory path.
 func setupGitRepo(t *testing.T, tr testRepo) string {
 	t.Helper()
 
@@ -33,10 +33,12 @@ func setupGitRepo(t *testing.T, tr testRepo) string {
 	runGitCommand(t, "init")
 	runGitCommand(t, "config", "user.email", "test@example.com")
 	runGitCommand(t, "config", "user.name", "Test User")
+	runGitCommand(t, "config", "commit.gpgsign", "false")
 
 	// Create a test file and commit it (initial commit)
 	testFile := filepath.Join(tmpDir, "test.txt")
-	err := os.WriteFile(testFile, []byte("test content"), 0644)
+
+	err := os.WriteFile(testFile, []byte("test content"), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
@@ -58,10 +60,12 @@ func setupGitRepo(t *testing.T, tr testRepo) string {
 		}
 
 		testFile := filepath.Join(tmpDir, fmt.Sprintf("file%d.txt", i))
-		err := os.WriteFile(testFile, []byte(fmt.Sprintf("content %d", i)), 0644)
+
+		err := os.WriteFile(testFile, []byte(fmt.Sprintf("content %d", i)), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
+
 		runGitCommand(t, "add", testFile)
 		runGitCommand(t, "commit", "-m", fmt.Sprintf("%s: add file %d", commitType, i))
 
@@ -90,42 +94,33 @@ func setupGitRepo(t *testing.T, tr testRepo) string {
 	return tmpDir
 }
 
-// Helper function to run git commands
+// runGitCommand is a helper function to run git commands.
 func runGitCommand(t *testing.T, args ...string) {
 	t.Helper()
 
 	cmd := exec.Command("git", args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Git command failed: %v\nCommand: git %v\nOutput: %s", err, args, output)
 	}
 }
 
-func date(input string) time.Time {
-	t, err := time.Parse("2006-01-02 15:04:05 -0700", input)
-	if err != nil {
-		panic(err)
-	}
-
-	return t
-}
-
 func TestLastTag(t *testing.T) {
 	tests := []struct {
 		name      string
-		setupFunc func(t *testing.T)
+		setupFunc func()
 		filter    string
 		want      string
 	}{
 		{
-			name:      "no tags",
-			setupFunc: func(t *testing.T) {},
-			filter:    "",
-			want:      "",
+			name:   "no tags",
+			filter: "",
+			want:   "",
 		},
 		{
 			name: "single tag",
-			setupFunc: func(t *testing.T) {
+			setupFunc: func() {
 				runGitCommand(t, "tag", "v1.0.0")
 			},
 			filter: "",
@@ -133,7 +128,7 @@ func TestLastTag(t *testing.T) {
 		},
 		{
 			name: "multiple tags",
-			setupFunc: func(t *testing.T) {
+			setupFunc: func() {
 				runGitCommand(t, "tag", "v1.0.0")
 				runGitCommand(t, "tag", "v2.0.0")
 			},
@@ -142,7 +137,7 @@ func TestLastTag(t *testing.T) {
 		},
 		{
 			name: "with tag filter",
-			setupFunc: func(t *testing.T) {
+			setupFunc: func() {
 				runGitCommand(t, "tag", "v1.0.0")
 				runGitCommand(t, "tag", "v2.0.0")
 			},
@@ -157,7 +152,9 @@ func TestLastTag(t *testing.T) {
 			_ = setupGitRepo(t, testRepo{})
 
 			// Run the test-specific setup
-			tt.setupFunc(t)
+			if tt.setupFunc != nil {
+				tt.setupFunc()
+			}
 
 			// Test with the specified filter
 			g := New()
@@ -343,10 +340,12 @@ func TestCommit(t *testing.T) {
 
 			// Create a new file to commit
 			testFile := filepath.Join(repo, "commit_test.txt")
-			err := os.WriteFile(testFile, []byte("test content for commit"), 0644)
+
+			err := os.WriteFile(testFile, []byte("test content for commit"), 0o644)
 			if err != nil {
 				t.Fatalf("Failed to create test file: %v", err)
 			}
+
 			runGitCommand(t, "add", "commit_test.txt")
 
 			// Create GitSV instance
@@ -384,12 +383,12 @@ func TestCommit(t *testing.T) {
 
 func TestTags(t *testing.T) {
 	tests := []struct {
-		name       string
-		repo       testRepo
-		tagFilter  string
-		extraSetup func(t *testing.T)
-		want       int
-		wantErr    bool
+		name      string
+		repo      testRepo
+		tagFilter string
+		setupFunc func()
+		want      int
+		wantErr   bool
 	}{
 		{
 			name:      "no tags",
@@ -409,7 +408,7 @@ func TestTags(t *testing.T) {
 			name:      "with tag filter",
 			repo:      testRepo{},
 			tagFilter: "v1*",
-			extraSetup: func(t *testing.T) {
+			setupFunc: func() {
 				runGitCommand(t, "tag", "v1.0.0")
 				runGitCommand(t, "tag", "v1.1.0")
 				runGitCommand(t, "tag", "v2.0.0")
@@ -421,7 +420,7 @@ func TestTags(t *testing.T) {
 			name:      "with annotated tags",
 			repo:      testRepo{},
 			tagFilter: "",
-			extraSetup: func(t *testing.T) {
+			setupFunc: func() {
 				// Create annotated tags
 				runGitCommand(t, "tag", "-a", "v1.0.0", "-m", "Version 1.0.0")
 				runGitCommand(t, "tag", "-a", "v1.1.0", "-m", "Version 1.1.0")
@@ -437,8 +436,8 @@ func TestTags(t *testing.T) {
 			_ = setupGitRepo(t, tt.repo)
 
 			// Run any extra setup if provided
-			if tt.extraSetup != nil {
-				tt.extraSetup(t)
+			if tt.setupFunc != nil {
+				tt.setupFunc()
 			}
 
 			// Create GitSV instance
@@ -476,10 +475,10 @@ func TestTags(t *testing.T) {
 
 func TestBranch(t *testing.T) {
 	tests := []struct {
-		name       string
-		repo       testRepo
-		extraSetup func(t *testing.T)
-		want       string
+		name      string
+		repo      testRepo
+		setupFunc func()
+		want      string
 	}{
 		{
 			name: "default branch",
@@ -489,7 +488,7 @@ func TestBranch(t *testing.T) {
 		{
 			name: "new branch",
 			repo: testRepo{commits: 1},
-			extraSetup: func(t *testing.T) {
+			setupFunc: func() {
 				runGitCommand(t, "checkout", "-b", "feature/new-feature")
 			},
 			want: "feature/new-feature",
@@ -497,7 +496,7 @@ func TestBranch(t *testing.T) {
 		{
 			name: "detached HEAD",
 			repo: testRepo{commits: 3},
-			extraSetup: func(t *testing.T) {
+			setupFunc: func() {
 				// Checkout a specific commit to create a detached HEAD state
 				runGitCommand(t, "checkout", "HEAD~1")
 			},
@@ -511,8 +510,8 @@ func TestBranch(t *testing.T) {
 			_ = setupGitRepo(t, tt.repo)
 
 			// Run any extra setup if provided
-			if tt.extraSetup != nil {
-				tt.extraSetup(t)
+			if tt.setupFunc != nil {
+				tt.setupFunc()
 			}
 
 			// Create GitSV instance
@@ -529,11 +528,11 @@ func TestBranch(t *testing.T) {
 
 func TestIsDetached(t *testing.T) {
 	tests := []struct {
-		name       string
-		repo       testRepo
-		extraSetup func(t *testing.T)
-		want       bool
-		wantErr    bool
+		name      string
+		repo      testRepo
+		setupFunc func()
+		want      bool
+		wantErr   bool
 	}{
 		{
 			name:    "on branch (not detached)",
@@ -544,7 +543,7 @@ func TestIsDetached(t *testing.T) {
 		{
 			name: "on new branch (not detached)",
 			repo: testRepo{commits: 1},
-			extraSetup: func(t *testing.T) {
+			setupFunc: func() {
 				runGitCommand(t, "checkout", "-b", "feature/new-feature")
 			},
 			want:    false,
@@ -553,7 +552,7 @@ func TestIsDetached(t *testing.T) {
 		{
 			name: "detached HEAD",
 			repo: testRepo{commits: 3},
-			extraSetup: func(t *testing.T) {
+			setupFunc: func() {
 				// Checkout a specific commit to create a detached HEAD state
 				runGitCommand(t, "checkout", "HEAD~1")
 			},
@@ -563,7 +562,7 @@ func TestIsDetached(t *testing.T) {
 		{
 			name: "detached HEAD at tag",
 			repo: testRepo{commits: 3, tags: 1},
-			extraSetup: func(t *testing.T) {
+			setupFunc: func() {
 				// Checkout a tag to create a detached HEAD state
 				runGitCommand(t, "checkout", "v1.0.0")
 			},
@@ -578,8 +577,8 @@ func TestIsDetached(t *testing.T) {
 			_ = setupGitRepo(t, tt.repo)
 
 			// Run any extra setup if provided
-			if tt.extraSetup != nil {
-				tt.extraSetup(t)
+			if tt.setupFunc != nil {
+				tt.setupFunc()
 			}
 
 			// Create GitSV instance
@@ -603,14 +602,14 @@ func TestIsDetached(t *testing.T) {
 
 func TestTag(t *testing.T) {
 	tests := []struct {
-		name       string
-		version    string
-		annotate   bool
-		local      bool
-		repo       testRepo
-		extraSetup func(t *testing.T)
-		want       string
-		wantErr    bool
+		name      string
+		version   string
+		annotate  bool
+		local     bool
+		repo      testRepo
+		setupFunc func()
+		want      string
+		wantErr   bool
 	}{
 		{
 			name:     "simple tag",
@@ -636,7 +635,7 @@ func TestTag(t *testing.T) {
 			annotate: false,
 			local:    true,
 			repo:     testRepo{commits: 1},
-			extraSetup: func(t *testing.T) {
+			setupFunc: func() {
 				// Create a tag that will conflict
 				runGitCommand(t, "tag", "1.0.0")
 			},
@@ -669,8 +668,8 @@ func TestTag(t *testing.T) {
 			_ = setupGitRepo(t, tt.repo)
 
 			// Run any extra setup if provided
-			if tt.extraSetup != nil {
-				tt.extraSetup(t)
+			if tt.setupFunc != nil {
+				tt.setupFunc()
 			}
 
 			// Create GitSV instance
@@ -692,6 +691,7 @@ func TestTag(t *testing.T) {
 			// Check error
 			if tt.wantErr {
 				assert.Error(t, err)
+
 				return
 			}
 

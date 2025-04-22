@@ -123,12 +123,43 @@ func TestBaseMessageProcessor_SkipBranch(t *testing.T) {
 		detached bool
 		want     bool
 	}{
-		{"normal branch", newBranchCfg(false), "JIRA-123", false, false},
-		{"dont ignore detached branch", newBranchCfg(false), "JIRA-123", true, false},
-		{"ignore branch on skip list", newBranchCfg(false), "master", false, true},
-		{"ignore detached branch", newBranchCfg(true), "JIRA-123", true, true},
-		{"null skip detached", BranchesConfig{Skip: []string{}}, "JIRA-123", true, false},
+		{
+			name:     "normal branch",
+			bcfg:     newBranchCfg(false),
+			branch:   "JIRA-123",
+			detached: false,
+			want:     false,
+		},
+		{
+			name:     "dont ignore detached branch",
+			bcfg:     newBranchCfg(false),
+			branch:   "JIRA-123",
+			detached: true,
+			want:     false,
+		},
+		{
+			name:     "ignore branch on skip list",
+			bcfg:     newBranchCfg(false),
+			branch:   "master",
+			detached: false,
+			want:     true,
+		},
+		{
+			name:     "ignore detached branch",
+			bcfg:     newBranchCfg(true),
+			branch:   "JIRA-123",
+			detached: true,
+			want:     true,
+		},
+		{
+			name:     "null skip detached",
+			bcfg:     BranchesConfig{Skip: []string{}},
+			branch:   "JIRA-123",
+			detached: true,
+			want:     false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(ccfg, tt.bcfg)
@@ -147,55 +178,69 @@ func TestBaseMessageProcessor_Validate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"single line valid message",
-			ccfg,
-			"feat: add something", false,
+			name:    "single line valid message",
+			cfg:     ccfg,
+			message: "feat: add something",
+			wantErr: false,
 		},
 		{
-			"single line valid message with scope",
-			ccfg,
-			"feat(scope): add something", false,
-		},
-		{"single line valid scope from list", ccfgWithScope, "feat(scope): add something", false},
-		{"single line invalid scope from list", ccfgWithScope, "feat(invalid): add something", true},
-		{
-			"single line invalid type message",
-			ccfg,
-			"something: add something", true,
+			name:    "single line valid message with scope",
+			cfg:     ccfg,
+			message: "feat(scope): add something",
+			wantErr: false,
 		},
 		{
-			"single line invalid type message",
-			ccfg,
-			"feat?: add something", true,
-		},
-
-		{
-			"multi line valid message",
-			ccfg,
-			`feat: add something
-
-		team: x`, false,
-		},
-
-		{
-			"multi line invalid message",
-			ccfg,
-			`feat add something
-
-		team: x`, true,
-		},
-
-		{
-			"support ! for breaking change",
-			ccfg,
-			"feat!: add something", false,
+			name:    "single line valid scope from list",
+			cfg:     ccfgWithScope,
+			message: "feat(scope): add something",
+			wantErr: false,
 		},
 		{
-			"support ! with scope for breaking change",
-			ccfg,
-			"feat(scope)!: add something", false,
+			name:    "single line invalid scope from list",
+			cfg:     ccfgWithScope,
+			message: "feat(invalid): add something",
+			wantErr: true,
+		},
+		{
+			name:    "single line invalid type message",
+			cfg:     ccfg,
+			message: "something: add something",
+			wantErr: true,
+		},
+		{
+			name:    "single line invalid type message",
+			cfg:     ccfg,
+			message: "feat?: add something",
+			wantErr: true,
+		},
+		{
+			name: "multi line valid message",
+			cfg:  ccfg,
+			message: `feat: add something
+		team: x`,
+			wantErr: false,
+		},
+		{
+			name: "multi line invalid message",
+			cfg:  ccfg,
+			message: `feat add something
+		team: x`,
+			wantErr: true,
+		},
+		{
+			name:    "support ! for breaking change",
+			cfg:     ccfg,
+			message: "feat!: add something",
+			wantErr: false,
+		},
+		{
+			name:    "support ! with scope for breaking change",
+			cfg:     ccfg,
+			message: "feat(scope)!: add something",
+			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
@@ -214,21 +259,25 @@ func TestBaseMessageProcessor_ValidateType(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"valid type",
-			ccfg,
-			"feat", false,
+			name:    "valid type",
+			cfg:     ccfg,
+			ctype:   "feat",
+			wantErr: false,
 		},
 		{
-			"invalid type",
-			ccfg,
-			"aaa", true,
+			name:    "invalid type",
+			cfg:     ccfg,
+			ctype:   "aaa",
+			wantErr: true,
 		},
 		{
-			"empty type",
-			ccfg,
-			"", true,
+			name:    "empty type",
+			cfg:     ccfg,
+			ctype:   "",
+			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
@@ -247,13 +296,25 @@ func TestBaseMessageProcessor_ValidateScope(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"any scope",
-			ccfg,
-			"aaa", false,
+			name:    "any scope",
+			cfg:     ccfg,
+			scope:   "aaa",
+			wantErr: false,
 		},
-		{"valid scope with scope list", ccfgWithScope, "scope", false},
-		{"invalid scope with scope list", ccfgWithScope, "aaa", true},
+		{
+			name:    "valid scope with scope list",
+			cfg:     ccfgWithScope,
+			scope:   "scope",
+			wantErr: false,
+		},
+		{
+			name:    "invalid scope with scope list",
+			cfg:     ccfgWithScope,
+			scope:   "aaa",
+			wantErr: true,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
@@ -272,29 +333,34 @@ func TestBaseMessageProcessor_ValidateDescription(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			"empty description",
-			ccfg,
-			"", true,
+			name:        "empty description",
+			cfg:         ccfg,
+			description: "",
+			wantErr:     true,
 		},
 		{
-			"sigle letter description",
-			ccfg,
-			"a", false,
+			name:        "sigle letter description",
+			cfg:         ccfg,
+			description: "a",
+			wantErr:     false,
 		},
 		{
-			"number description",
-			ccfg,
-			"1", true,
+			name:        "number description",
+			cfg:         ccfg,
+			description: "1",
+			wantErr:     true,
 		},
 		{
-			"valid description",
-			ccfg,
-			"add some feature", false,
+			name:        "valid description",
+			cfg:         ccfg,
+			description: "add some feature",
+			wantErr:     false,
 		},
 		{
-			"invalid capital letter description",
-			ccfg,
-			"Add some feature", true,
+			name:        "invalid capital letter description",
+			cfg:         ccfg,
+			description: "Add some feature",
+			wantErr:     true,
 		},
 	}
 	for _, tt := range tests {
@@ -317,66 +383,103 @@ func TestBaseMessageProcessor_Enhance(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"issue on branch name",
-			ccfg,
-			"JIRA-123", "fix: fix something", "\njira: JIRA-123", false,
+			name:    "issue on branch name",
+			cfg:     ccfg,
+			branch:  "JIRA-123",
+			message: "fix: fix something",
+			want:    "\njira: JIRA-123",
+			wantErr: false,
 		},
 		{
-			"issue on branch name with description",
-			ccfg,
-			"JIRA-123-some-description", "fix: fix something", "\njira: JIRA-123", false,
+			name:    "issue on branch name with description",
+			cfg:     ccfg,
+			branch:  "JIRA-123-some-description",
+			message: "fix: fix something",
+			want:    "\njira: JIRA-123",
+			wantErr: false,
 		},
 		{
-			"issue on branch name with prefix",
-			ccfg,
-			"feature/JIRA-123", "fix: fix something", "\njira: JIRA-123", false,
+			name:    "issue on branch name with prefix",
+			cfg:     ccfg,
+			branch:  "feature/JIRA-123",
+			message: "fix: fix something",
+			want:    "\njira: JIRA-123",
+			wantErr: false,
 		},
 		{
-			"with footer",
-			ccfg,
-			"JIRA-123", fullMessage, "jira: JIRA-123", false,
+			name:    "with footer",
+			cfg:     ccfg,
+			branch:  "JIRA-123",
+			message: fullMessage,
+			want:    "jira: JIRA-123",
+			wantErr: false,
 		},
 		{
-			"with issue on footer",
-			ccfg,
-			"JIRA-123", fullMessageWithJira, "", false,
+			name:    "with issue on footer",
+			cfg:     ccfg,
+			branch:  "JIRA-123",
+			message: fullMessageWithJira,
+			want:    "",
+			wantErr: false,
 		},
 		{
-			"issue on branch name with prefix and description",
-			ccfg,
-			"feature/JIRA-123-some-description", "fix: fix something", "\njira: JIRA-123", false,
+			name:    "issue on branch name with prefix and description",
+			cfg:     ccfg,
+			branch:  "feature/JIRA-123-some-description",
+			message: "fix: fix something",
+			want:    "\njira: JIRA-123",
+			wantErr: false,
 		},
 		{
-			"no issue on branch name",
-			ccfg,
-			"branch", "fix: fix something", "", true,
+			name:    "no issue on branch name",
+			cfg:     ccfg,
+			branch:  "branch",
+			message: "fix: fix something",
+			want:    "",
+			wantErr: true,
 		},
 		{
-			"unexpected branch name",
-			ccfg,
-			"feature /JIRA-123", "fix: fix something", "", true,
+			name:    "unexpected branch name",
+			cfg:     ccfg,
+			branch:  "feature /JIRA-123",
+			message: "fix: fix something",
+			want:    "",
+			wantErr: true,
 		},
 		{
-			"issue on branch name using hash",
-			ccfgHash,
-			"JIRA-123-some-description", "fix: fix something", "\njira #JIRA-123", false,
+			name:    "issue on branch name using hash",
+			cfg:     ccfgHash,
+			branch:  "JIRA-123-some-description",
+			message: "fix: fix something",
+			want:    "\njira #JIRA-123",
+			wantErr: false,
 		},
 		{
-			"numeric issue on branch name",
-			ccfgGitIssue,
-			"#13", "fix: fix something", "\nissue: #13", false,
+			name:    "numeric issue on branch name",
+			cfg:     ccfgGitIssue,
+			branch:  "#13",
+			message: "fix: fix something",
+			want:    "\nissue: #13",
+			wantErr: false,
 		},
 		{
-			"numeric issue on branch name without hash",
-			ccfgGitIssue,
-			"13", "fix: fix something", "\nissue: #13", false,
+			name:    "numeric issue on branch name without hash",
+			cfg:     ccfgGitIssue,
+			branch:  "13",
+			message: "fix: fix something",
+			want:    "\nissue: #13",
+			wantErr: false,
 		},
 		{
-			"numeric issue on branch name with description without hash",
-			ccfgGitIssue,
-			"13-some-fix", "fix: fix something", "\nissue: #13", false,
+			name:    "numeric issue on branch name with description without hash",
+			cfg:     ccfgGitIssue,
+			branch:  "13-some-fix",
+			message: "fix: fix something",
+			want:    "\nissue: #13",
+			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Enhance(tt.branch, tt.message)
@@ -402,13 +505,44 @@ func TestBaseMessageProcessor_IssueID(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"simple branch", "JIRA-123", "JIRA-123", false},
-		{"branch with prefix", "feature/JIRA-123", "JIRA-123", false},
-		{"branch with prefix and posfix", "feature/JIRA-123-some-description", "JIRA-123", false},
-		{"branch not found", "feature/wrong123-some-description", "", false},
-		{"empty branch", "", "", false},
-		{"unexpected branch name", "feature /JIRA-123", "", false},
+		{
+			name:    "simple branch",
+			branch:  "JIRA-123",
+			want:    "JIRA-123",
+			wantErr: false,
+		},
+		{
+			name:    "branch with prefix",
+			branch:  "feature/JIRA-123",
+			want:    "JIRA-123",
+			wantErr: false,
+		},
+		{
+			name:    "branch with prefix and posfix",
+			branch:  "feature/JIRA-123-some-description",
+			want:    "JIRA-123",
+			wantErr: false,
+		},
+		{
+			name:    "branch not found",
+			branch:  "feature/wrong123-some-description",
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name:    "empty branch",
+			branch:  "",
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name:    "unexpected branch name",
+			branch:  "feature /JIRA-123",
+			want:    "",
+			wantErr: false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := p.IssueID(tt.branch)
@@ -444,23 +578,54 @@ func Test_hasIssueID(t *testing.T) {
 		issueCfg CommitMessageFooterConfig
 		want     bool
 	}{
-		{"single line without issue", "feat: something", cfgColon, false},
-		{"multi line without issue", `feat: something
+		{
+			name:     "single line without issue",
+			message:  "feat: something",
+			issueCfg: cfgColon,
+			want:     false,
+		},
+		{
+			name: "multi line without issue",
+			message: `feat: something
 
-yay`, cfgColon, false},
-		{"multi line without jira issue", `feat: something
+yay`,
+			issueCfg: cfgColon,
+			want:     false,
+		},
+		{
+			name: "multi line without jira issue",
+			message: `feat: something
 
-jira1: JIRA-123`, cfgColon, false},
-		{"multi line with issue", `feat: something
+jira1: JIRA-123`,
+			issueCfg: cfgColon,
+			want:     false,
+		},
+		{
+			name: "multi line with issue",
+			message: `feat: something
 
-jira: JIRA-123`, cfgColon, true},
-		{"multi line with issue and hash", `feat: something
+jira: JIRA-123`,
+			issueCfg: cfgColon,
+			want:     true,
+		},
+		{
+			name: "multi line with issue and hash",
+			message: `feat: something
 
-jira #JIRA-123`, cfgHash, true},
-		{"empty config", `feat: something
+jira #JIRA-123`,
+			issueCfg: cfgHash,
+			want:     true,
+		},
+		{
+			name: "empty config",
+			message: `feat: something
 
-jira #JIRA-123`, cfgEmpty, false},
+jira #JIRA-123`,
+			issueCfg: cfgEmpty,
+			want:     false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := hasIssueID(tt.message, tt.issueCfg); got != tt.want {
@@ -476,12 +641,33 @@ func Test_hasFooter(t *testing.T) {
 		message string
 		want    bool
 	}{
-		{"simple message", "feat: add something", false},
-		{"full messsage", fullMessage, true},
-		{"full messsage with refs", fullMessageRefs, true},
-		{"subject and footer message", subjectAndFooterMessage, true},
-		{"subject and body message", subjectAndBodyMessage, false},
+		{
+			name:    "simple message",
+			message: "feat: add something",
+			want:    false,
+		},
+		{
+			name:    "full messsage",
+			message: fullMessage,
+			want:    true,
+		},
+		{
+			name:    "full messsage with refs",
+			message: fullMessageRefs,
+			want:    true,
+		},
+		{
+			name:    "subject and footer message",
+			message: subjectAndFooterMessage,
+			want:    true,
+		},
+		{
+			name:    "subject and body message",
+			message: subjectAndBodyMessage,
+			want:    false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := hasFooter(tt.message); got != tt.want {
@@ -525,10 +711,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 		want    CommitMessage
 	}{
 		{
-			"simple message",
-			ccfg,
-			"feat: something awesome", "",
-			CommitMessage{
+			name:    "simple message",
+			cfg:     ccfg,
+			subject: "feat: something awesome",
+			body:    "",
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "",
 				Description:      "something awesome",
@@ -538,10 +725,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"message with scope",
-			ccfg,
-			"feat(scope): something awesome", "",
-			CommitMessage{
+			name:    "message with scope",
+			cfg:     ccfg,
+			subject: "feat(scope): something awesome",
+			body:    "",
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "scope",
 				Description:      "something awesome",
@@ -551,10 +739,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"unmapped type",
-			ccfg,
-			"unkn: something unknown", "",
-			CommitMessage{
+			name:    "unmapped type",
+			cfg:     ccfg,
+			subject: "unkn: something unknown",
+			body:    "",
+			want: CommitMessage{
 				Type:             "unkn",
 				Scope:            "",
 				Description:      "something unknown",
@@ -564,10 +753,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"jira and breaking change metadata",
-			ccfg,
-			"feat: something new", completeBody,
-			CommitMessage{
+			name:    "jira and breaking change metadata",
+			cfg:     ccfg,
+			subject: "feat: something new",
+			body:    completeBody,
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "",
 				Description:      "something new",
@@ -580,10 +770,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"jira only metadata",
-			ccfg,
-			"feat: something new", issueOnlyBody,
-			CommitMessage{
+			name:    "jira only metadata",
+			cfg:     ccfg,
+			subject: "feat: something new",
+			body:    issueOnlyBody,
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "",
 				Description:      "something new",
@@ -593,10 +784,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"jira synonyms metadata",
-			ccfg,
-			"feat: something new", issueSynonymsBody,
-			CommitMessage{
+			name:    "jira synonyms metadata",
+			cfg:     ccfg,
+			subject: "feat: something new",
+			body:    issueSynonymsBody,
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "",
 				Description:      "something new",
@@ -606,10 +798,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"breaking change with empty body",
-			ccfg,
-			"feat!: something new", "",
-			CommitMessage{
+			name:    "breaking change with empty body",
+			cfg:     ccfg,
+			subject: "feat!: something new",
+			body:    "",
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "",
 				Description:      "something new",
@@ -621,10 +814,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"hash metadata",
-			ccfg,
-			"feat: something new", hashMetadataBody,
-			CommitMessage{
+			name:    "hash metadata",
+			cfg:     ccfg,
+			subject: "feat: something new",
+			body:    hashMetadataBody,
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "",
 				Description:      "something new",
@@ -634,10 +828,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"empty issue cfg",
-			ccfgEmptyIssue,
-			"feat: something new", hashMetadataBody,
-			CommitMessage{
+			name:    "empty issue cfg",
+			cfg:     ccfgEmptyIssue,
+			subject: "feat: something new",
+			body:    hashMetadataBody,
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "",
 				Description:      "something new",
@@ -647,10 +842,11 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 		{
-			"carriage return on body",
-			ccfg,
-			"feat: something new", bodyWithCarriage,
-			CommitMessage{
+			name:    "carriage return on body",
+			cfg:     ccfg,
+			subject: "feat: something new",
+			body:    bodyWithCarriage,
+			want: CommitMessage{
 				Type:             "feat",
 				Scope:            "",
 				Description:      "something new",
@@ -660,6 +856,7 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, err := NewMessageProcessor(
@@ -681,102 +878,103 @@ func TestBaseMessageProcessor_Format(t *testing.T) {
 		wantFooter string
 	}{
 		{
-			"simple message",
-			ccfg,
-			NewCommitMessage("feat", "", "something", "", "", ""),
-			"feat: something",
-			"",
-			"",
+			name:       "simple message",
+			cfg:        ccfg,
+			msg:        NewCommitMessage("feat", "", "something", "", "", ""),
+			wantHeader: "feat: something",
+			wantBody:   "",
+			wantFooter: "",
 		},
 		{
-			"with issue",
-			ccfg,
-			NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
-			"feat: something",
-			"",
-			"jira: JIRA-123",
+			name:       "with issue",
+			cfg:        ccfg,
+			msg:        NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
+			wantHeader: "feat: something",
+			wantBody:   "",
+			wantFooter: "jira: JIRA-123",
 		},
 		{
-			"with issue using hash",
-			ccfgHash,
-			NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
-			"feat: something",
-			"",
-			"jira #JIRA-123",
+			name:       "with issue using hash",
+			cfg:        ccfgHash,
+			msg:        NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
+			wantHeader: "feat: something",
+			wantBody:   "",
+			wantFooter: "jira #JIRA-123",
 		},
 		{
-			"with issue using double hash",
-			ccfgHash,
-			NewCommitMessage("feat", "", "something", "", "#JIRA-123", ""),
-			"feat: something",
-			"",
-			"jira #JIRA-123",
+			name:       "with issue using double hash",
+			cfg:        ccfgHash,
+			msg:        NewCommitMessage("feat", "", "something", "", "#JIRA-123", ""),
+			wantHeader: "feat: something",
+			wantBody:   "",
+			wantFooter: "jira #JIRA-123",
 		},
 		{
-			"with breaking change",
-			ccfg,
-			NewCommitMessage("feat", "", "something", "", "", "breaks"),
-			"feat: something",
-			"",
-			"BREAKING CHANGE: breaks",
+			name:       "with breaking change",
+			cfg:        ccfg,
+			msg:        NewCommitMessage("feat", "", "something", "", "", "breaks"),
+			wantHeader: "feat: something",
+			wantBody:   "",
+			wantFooter: "BREAKING CHANGE: breaks",
 		},
 		{
-			"with scope",
-			ccfg,
-			NewCommitMessage("feat", "scope", "something", "", "", ""),
-			"feat(scope): something",
-			"",
-			"",
+			name:       "with scope",
+			cfg:        ccfg,
+			msg:        NewCommitMessage("feat", "scope", "something", "", "", ""),
+			wantHeader: "feat(scope): something",
+			wantBody:   "",
+			wantFooter: "",
 		},
 		{
-			"with body",
-			ccfg,
-			NewCommitMessage("feat", "", "something", "body", "", ""),
-			"feat: something",
-			"body",
-			"",
+			name:       "with body",
+			cfg:        ccfg,
+			msg:        NewCommitMessage("feat", "", "something", "body", "", ""),
+			wantHeader: "feat: something",
+			wantBody:   "body",
+			wantFooter: "",
 		},
 		{
-			"with multiline body",
-			ccfg,
-			NewCommitMessage("feat", "", "something", multilineBody, "", ""),
-			"feat: something",
-			multilineBody,
-			"",
+			name:       "with multiline body",
+			cfg:        ccfg,
+			msg:        NewCommitMessage("feat", "", "something", multilineBody, "", ""),
+			wantHeader: "feat: something",
+			wantBody:   multilineBody,
+			wantFooter: "",
 		},
 		{
-			"full message",
-			ccfg,
-			NewCommitMessage("feat", "scope", "something", multilineBody, "JIRA-123", "breaks"),
-			"feat(scope): something",
-			multilineBody,
-			fullFooter,
+			name:       "full message",
+			cfg:        ccfg,
+			msg:        NewCommitMessage("feat", "scope", "something", multilineBody, "JIRA-123", "breaks"),
+			wantHeader: "feat(scope): something",
+			wantBody:   multilineBody,
+			wantFooter: fullFooter,
 		},
 		{
-			"config without issue key",
-			ccfgEmptyIssue,
-			NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
-			"feat: something",
-			"",
-			"",
+			name:       "config without issue key",
+			cfg:        ccfgEmptyIssue,
+			msg:        NewCommitMessage("feat", "", "something", "", "JIRA-123", ""),
+			wantHeader: "feat: something",
+			wantBody:   "",
+			wantFooter: "",
 		},
 		{
-			"with issue and issue prefix",
-			ccfgGitIssue,
-			NewCommitMessage("feat", "", "something", "", "123", ""),
-			"feat: something",
-			"",
-			"issue: #123",
+			name:       "with issue and issue prefix",
+			cfg:        ccfgGitIssue,
+			msg:        NewCommitMessage("feat", "", "something", "", "123", ""),
+			wantHeader: "feat: something",
+			wantBody:   "",
+			wantFooter: "issue: #123",
 		},
 		{
-			"with #issue and issue prefix",
-			ccfgGitIssue,
-			NewCommitMessage("feat", "", "something", "", "#123", ""),
-			"feat: something",
-			"",
-			"issue: #123",
+			name:       "with #issue and issue prefix",
+			cfg:        ccfgGitIssue,
+			msg:        NewCommitMessage("feat", "", "something", "", "#123", ""),
+			wantHeader: "feat: something",
+			wantBody:   "",
+			wantFooter: "issue: #123",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, got2 := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Format(tt.msg)
@@ -810,9 +1008,20 @@ func Test_splitCommitMessageContent(t *testing.T) {
 		wantSubject string
 		wantBody    string
 	}{
-		{"single line commit", "feat: something", "feat: something", ""},
-		{"multi line commit", fullMessage, "fix: correct minor typos in code", expectedBodyFullMessage},
+		{
+			name:        "single line commit",
+			content:     "feat: something",
+			wantSubject: "feat: something",
+			wantBody:    "",
+		},
+		{
+			name:        "multi line commit",
+			content:     fullMessage,
+			wantSubject: "fix: correct minor typos in code",
+			wantBody:    expectedBodyFullMessage,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := splitCommitMessageContent(tt.content)
@@ -836,11 +1045,40 @@ func Test_parseSubjectMessage(t *testing.T) {
 		wantDescription       string
 		wantHasBreakingChange bool
 	}{
-		{"valid commit", "feat: something", "feat", "", "something", false},
-		{"valid commit with scope", "feat(scope): something", "feat", "scope", "something", false},
-		{"valid commit with breaking change", "feat(scope)!: something", "feat", "scope", "something", true},
-		{"missing description", "feat: ", "feat", "", "", false},
+		{
+			name:                  "valid commit",
+			message:               "feat: something",
+			wantType:              "feat",
+			wantScope:             "",
+			wantDescription:       "something",
+			wantHasBreakingChange: false,
+		},
+		{
+			name:                  "valid commit with scope",
+			message:               "feat(scope): something",
+			wantType:              "feat",
+			wantScope:             "scope",
+			wantDescription:       "something",
+			wantHasBreakingChange: false,
+		},
+		{
+			name:                  "valid commit with breaking change",
+			message:               "feat(scope)!: something",
+			wantType:              "feat",
+			wantScope:             "scope",
+			wantDescription:       "something",
+			wantHasBreakingChange: true,
+		},
+		{
+			name:                  "missing description",
+			message:               "feat: ",
+			wantType:              "feat",
+			wantScope:             "",
+			wantDescription:       "",
+			wantHasBreakingChange: false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctype, scope, description, hasBreakingChange := parseSubjectMessage(tt.message)
@@ -872,61 +1110,63 @@ func Test_prepareHeader(t *testing.T) {
 		wantError      bool
 	}{
 		{
-			"conventional without selector",
-			"",
-			"feat: something",
-			"feat: something",
-			false,
+			name:           "conventional without selector",
+			headerSelector: "",
+			commitHeader:   "feat: something",
+			wantHeader:     "feat: something",
+			wantError:      false,
 		},
 		{
-			"conventional with scope without selector",
-			"",
-			"feat(scope): something",
-			"feat(scope): something",
-			false,
+			name:           "conventional with scope without selector",
+			headerSelector: "",
+			commitHeader:   "feat(scope): something",
+			wantHeader:     "feat(scope): something",
+			wantError:      false,
 		},
 		{
-			"non-conventional without selector",
-			"",
-			"something", "something",
-			false,
+			name:           "non-conventional without selector",
+			headerSelector: "",
+			commitHeader:   "something",
+			wantHeader:     "something",
+			wantError:      false,
 		},
 		{
-			"matching conventional with selector with group",
-			"Merged PR (\\d+): (?P<header>.*)",
-			"Merged PR 123: feat: something",
-			"feat: something",
-			false,
+			name:           "matching conventional with selector with group",
+			headerSelector: "Merged PR (\\d+): (?P<header>.*)",
+			commitHeader:   "Merged PR 123: feat: something",
+			wantHeader:     "feat: something",
+			wantError:      false,
 		},
 		{
-			"matching non-conventional with selector with group",
-			"Merged PR (\\d+): (?P<header>.*)",
-			"Merged PR 123: something",
-			"something",
-			false,
+			name:           "matching non-conventional with selector with group",
+			headerSelector: "Merged PR (\\d+): (?P<header>.*)",
+			commitHeader:   "Merged PR 123: something",
+			wantHeader:     "something",
+			wantError:      false,
 		},
 		{
-			"matching non-conventional with selector without group",
-			"Merged PR (\\d+): (.*)",
-			"Merged PR 123: something",
-			"",
-			true,
+			name:           "matching non-conventional with selector without group",
+			headerSelector: "Merged PR (\\d+): (.*)",
+			commitHeader:   "Merged PR 123: something",
+			wantHeader:     "",
+			wantError:      true,
 		},
 		{
-			"non-matching non-conventional with selector with group",
-			"Merged PR (\\d+): (?P<header>.*)",
-			"something",
-			"",
-			true,
+			name:           "non-matching non-conventional with selector with group",
+			headerSelector: "Merged PR (\\d+): (?P<header>.*)",
+			commitHeader:   "something",
+			wantHeader:     "",
+			wantError:      true,
 		},
 		{
-			"matching non-conventional with invalid regex",
-			"Merged PR (\\d+): (<header>.*)",
-			"Merged PR 123: something",
-			"",
-			true,
+			name:           "matching non-conventional with invalid regex",
+			headerSelector: "Merged PR (\\d+): (<header>.*)",
+			commitHeader:   "Merged PR 123: something",
+			wantHeader:     "",
+			wantError:      true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			msgProcessor := NewMessageProcessor(newCommitMessageCfg(tt.headerSelector), newBranchCfg(false))
@@ -949,10 +1189,23 @@ func Test_removeCarriage(t *testing.T) {
 		commit string
 		want   string
 	}{
-		{"normal string", "normal string", "normal string"},
-		{"break line", "normal\nstring", "normal\nstring"},
-		{"carriage return", "normal\r\nstring", "normal\nstring"},
+		{
+			name:   "normal string",
+			commit: "normal string",
+			want:   "normal string",
+		},
+		{
+			name:   "break line",
+			commit: "normal\nstring",
+			want:   "normal\nstring",
+		},
+		{
+			name:   "carriage return",
+			commit: "normal\r\nstring",
+			want:   "normal\nstring",
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := removeCarriage(tt.commit); got != tt.want {
