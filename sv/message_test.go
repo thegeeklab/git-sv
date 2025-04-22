@@ -1,8 +1,9 @@
 package sv
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var ccfg = CommitMessageConfig{
@@ -163,9 +164,9 @@ func TestBaseMessageProcessor_SkipBranch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(ccfg, tt.bcfg)
-			if got := p.SkipBranch(tt.branch, tt.detached); got != tt.want {
-				t.Errorf("BaseMessageProcessor.SkipBranch() = %v, want %v", got, tt.want)
-			}
+			got := p.SkipBranch(tt.branch, tt.detached)
+
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -244,9 +245,15 @@ func TestBaseMessageProcessor_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
-			if err := p.Validate(tt.message); (err != nil) != tt.wantErr {
-				t.Errorf("BaseMessageProcessor.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			err := p.Validate(tt.message)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -281,9 +288,15 @@ func TestBaseMessageProcessor_ValidateType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
-			if err := p.ValidateType(tt.ctype); (err != nil) != tt.wantErr {
-				t.Errorf("BaseMessageProcessor.ValidateType() error = %v, wantErr %v", err, tt.wantErr)
+			err := p.ValidateType(tt.ctype)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -318,9 +331,15 @@ func TestBaseMessageProcessor_ValidateScope(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
-			if err := p.ValidateScope(tt.scope); (err != nil) != tt.wantErr {
-				t.Errorf("BaseMessageProcessor.ValidateScope() error = %v, wantErr %v", err, tt.wantErr)
+			err := p.ValidateScope(tt.scope)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -363,12 +382,19 @@ func TestBaseMessageProcessor_ValidateDescription(t *testing.T) {
 			wantErr:     true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewMessageProcessor(tt.cfg, newBranchCfg(false))
-			if err := p.ValidateDescription(tt.description); (err != nil) != tt.wantErr {
-				t.Errorf("BaseMessageProcessor.ValidateDescription() error = %v, wantErr %v", err, tt.wantErr)
+			err := p.ValidateDescription(tt.description)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -483,15 +509,15 @@ func TestBaseMessageProcessor_Enhance(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Enhance(tt.branch, tt.message)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BaseMessageProcessor.Enhance() error = %v, wantErr %v", err, tt.wantErr)
+
+			if tt.wantErr {
+				assert.Error(t, err)
 
 				return
 			}
 
-			if got != tt.want {
-				t.Errorf("BaseMessageProcessor.Enhance() = %v, want %v", got, tt.want)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -546,15 +572,15 @@ func TestBaseMessageProcessor_IssueID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := p.IssueID(tt.branch)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BaseMessageProcessor.IssueID() error = %v, wantErr %v", err, tt.wantErr)
+
+			if tt.wantErr {
+				assert.Error(t, err)
 
 				return
 			}
 
-			if got != tt.want {
-				t.Errorf("BaseMessageProcessor.IssueID() = %v, want %v", got, tt.want)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -628,9 +654,9 @@ jira #JIRA-123`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := hasIssueID(tt.message, tt.issueCfg); got != tt.want {
-				t.Errorf("hasIssueID() = %v, want %v", got, tt.want)
-			}
+			got := hasIssueID(tt.message, tt.issueCfg)
+
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -670,9 +696,9 @@ func Test_hasFooter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := hasFooter(tt.message); got != tt.want {
-				t.Errorf("hasFooter() = %v, want %v", got, tt.want)
-			}
+			got := hasFooter(tt.message)
+
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -859,11 +885,10 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, err := NewMessageProcessor(
-				tt.cfg, newBranchCfg(false),
-			).Parse(tt.subject, tt.body); !reflect.DeepEqual(got, tt.want) && err == nil {
-				t.Errorf("BaseMessageProcessor.Parse() = [%+v], want [%+v]", got, tt.want)
-			}
+			got, err := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Parse(tt.subject, tt.body)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -978,17 +1003,10 @@ func TestBaseMessageProcessor_Format(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, got2 := NewMessageProcessor(tt.cfg, newBranchCfg(false)).Format(tt.msg)
-			if got != tt.wantHeader {
-				t.Errorf("BaseMessageProcessor.Format() header got = %v, want %v", got, tt.wantHeader)
-			}
 
-			if got1 != tt.wantBody {
-				t.Errorf("BaseMessageProcessor.Format() body got = %v, want %v", got1, tt.wantBody)
-			}
-
-			if got2 != tt.wantFooter {
-				t.Errorf("BaseMessageProcessor.Format() footer got = %v, want %v", got2, tt.wantFooter)
-			}
+			assert.Equal(t, tt.wantHeader, got)
+			assert.Equal(t, tt.wantBody, got1)
+			assert.Equal(t, tt.wantFooter, got2)
 		})
 	}
 }
@@ -1025,13 +1043,9 @@ func Test_splitCommitMessageContent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := splitCommitMessageContent(tt.content)
-			if got != tt.wantSubject {
-				t.Errorf("splitCommitMessageContent() subject got = %v, want %v", got, tt.wantSubject)
-			}
 
-			if got1 != tt.wantBody {
-				t.Errorf("splitCommitMessageContent() body got1 = [%v], want [%v]", got1, tt.wantBody)
-			}
+			assert.Equal(t, tt.wantSubject, got)
+			assert.Equal(t, tt.wantBody, got1)
 		})
 	}
 }
@@ -1082,21 +1096,11 @@ func Test_parseSubjectMessage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctype, scope, description, hasBreakingChange := parseSubjectMessage(tt.message)
-			if ctype != tt.wantType {
-				t.Errorf("parseSubjectMessage() type got = %v, want %v", ctype, tt.wantType)
-			}
 
-			if scope != tt.wantScope {
-				t.Errorf("parseSubjectMessage() scope got = %v, want %v", scope, tt.wantScope)
-			}
-
-			if description != tt.wantDescription {
-				t.Errorf("parseSubjectMessage() description got = %v, want %v", description, tt.wantDescription)
-			}
-
-			if hasBreakingChange != tt.wantHasBreakingChange {
-				t.Errorf("parseSubjectMessage() hasBreakingChange got = %v, want %v", hasBreakingChange, tt.wantHasBreakingChange)
-			}
+			assert.Equal(t, tt.wantType, ctype)
+			assert.Equal(t, tt.wantScope, scope)
+			assert.Equal(t, tt.wantDescription, description)
+			assert.Equal(t, tt.wantHasBreakingChange, hasBreakingChange)
 		})
 	}
 }
@@ -1172,13 +1176,14 @@ func Test_prepareHeader(t *testing.T) {
 			msgProcessor := NewMessageProcessor(newCommitMessageCfg(tt.headerSelector), newBranchCfg(false))
 			header, err := msgProcessor.prepareHeader(tt.commitHeader)
 
-			if tt.wantError && err == nil {
-				t.Errorf("prepareHeader() err got = %v, want not nil", err)
+			if tt.wantError {
+				assert.Error(t, err)
+
+				return
 			}
 
-			if header != tt.wantHeader {
-				t.Errorf("prepareHeader() header got = %v, want %v", header, tt.wantHeader)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantHeader, header)
 		})
 	}
 }
@@ -1208,9 +1213,9 @@ func Test_removeCarriage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := removeCarriage(tt.commit); got != tt.want {
-				t.Errorf("removeCarriage() = %v, want %v", got, tt.want)
-			}
+			got := removeCarriage(tt.commit)
+
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -1,10 +1,10 @@
 package templates
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/thegeeklab/git-sv/sv"
 )
 
@@ -26,15 +26,9 @@ func Test_checkTemplatesFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := templateFs.ReadFile(tt.file)
-			if err != nil {
-				t.Errorf("missing template error = %v", err)
 
-				return
-			}
-
-			if len(got) == 0 {
-				t.Errorf("empty template")
-			}
+			assert.NoError(t, err)
+			assert.NotEmpty(t, got)
 		})
 	}
 }
@@ -100,9 +94,9 @@ func Test_getSection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getSection(tt.sectionName, tt.sections); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getSection() = %v, want %v", got, tt.want)
-			}
+			got := getSection(tt.sectionName, tt.sections)
+
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

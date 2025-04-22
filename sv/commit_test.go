@@ -1,10 +1,10 @@
 package sv
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
@@ -118,13 +118,8 @@ func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
 				CommitMessageConfig{Types: []string{"major", "minor", "patch", "none"}})
 			got, gotUpdated := p.NextVersion(tt.version, tt.commits)
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SemVerCommitProcessor.NextVersion() Version = %v, want %v", got, tt.want)
-			}
-
-			if tt.wantUpdated != gotUpdated {
-				t.Errorf("SemVerCommitProcessor.NextVersion() Updated = %v, want %v", gotUpdated, tt.wantUpdated)
-			}
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.wantUpdated, gotUpdated)
 		})
 	}
 }
@@ -158,15 +153,14 @@ func TestToVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := ToVersion(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ToVersion() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 
 				return
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToVersion() = %v, want %v", got, tt.want)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -248,11 +242,10 @@ func TestIsValidVersion(t *testing.T) {
 			want:  false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsValidVersion(tt.value); got != tt.want {
-				t.Errorf("IsValidVersion(%s) = %v, want %v", tt.value, got, tt.want)
-			}
+			assert.Equal(t, tt.want, IsValidVersion(tt.value))
 		})
 	}
 }

@@ -1,11 +1,11 @@
 package sv
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBaseReleaseNoteProcessor_Create(t *testing.T) {
@@ -115,9 +115,9 @@ func TestBaseReleaseNoteProcessor_Create(t *testing.T) {
 						{Name: "Breaking Changes", SectionType: "breaking-changes"},
 					},
 				})
-			if got := p.Create(tt.version, tt.tag, tt.date, tt.commits); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BaseReleaseNoteProcessor.Create() = %v, want %v", got, tt.want)
-			}
+			got := p.Create(tt.version, tt.tag, tt.date, tt.commits)
+
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

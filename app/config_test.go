@@ -1,9 +1,9 @@
 package app
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/thegeeklab/git-sv/sv"
 )
 
@@ -141,13 +141,16 @@ func Test_merge(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := merge(&tt.dst, tt.src); (err != nil) != tt.wantErr {
-				t.Errorf("merge() error = %v, wantErr %v", err, tt.wantErr)
+			err := merge(&tt.dst, tt.src)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				return
 			}
 
-			if !reflect.DeepEqual(tt.dst, tt.want) {
-				t.Errorf("merge() = %v, want %v", tt.dst, tt.want)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, tt.dst)
 		})
 	}
 }

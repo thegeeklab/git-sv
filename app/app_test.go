@@ -161,7 +161,7 @@ func TestLastTag(t *testing.T) {
 			g.Config.Tag.Filter = &tt.filter
 
 			got := g.LastTag()
-			assert.Equal(t, tt.want, got, "Expected %s as the last tag", tt.want)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -202,7 +202,7 @@ func TestLastTagWithMultipleVersions(t *testing.T) {
 			g.Config.Tag.Filter = &tt.filter
 
 			got := g.LastTag()
-			assert.Equal(t, tt.want, got, "Expected %s as the last tag", tt.want)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -276,15 +276,15 @@ func TestLog(t *testing.T) {
 				return
 			}
 
-			assert.NoError(t, err, "Log() returned an error: %v", err)
-			assert.Equal(t, tt.want, len(logs), "Log() returned %d logs, want %d", len(logs), tt.want)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, len(logs))
 
 			// Verify log structure
 			for _, log := range logs {
 				// Check that required fields are present
-				assert.NotEmpty(t, log.Hash, "Log() returned log with empty hash")
-				assert.NotEmpty(t, log.Date, "Log() returned log with empty date")
-				assert.NotEmpty(t, log.AuthorName, "Log() returned log with empty author name")
+				assert.NotEmpty(t, log.Hash)
+				assert.NotEmpty(t, log.Date)
+				assert.NotEmpty(t, log.AuthorName)
 			}
 		})
 	}
@@ -455,18 +455,17 @@ func TestTags(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, len(tags), "Expected %d tags, got %d", tt.want, len(tags))
+			assert.Equal(t, tt.want, len(tags))
 
 			// Verify tag structure
 			for _, tag := range tags {
-				assert.NotEmpty(t, tag.Name, "Tag name should not be empty")
+				assert.NotEmpty(t, tag.Name)
 			}
 
 			// For the tag filter test, verify that only matching tags are returned
 			if tt.tagFilter == "v1*" {
 				for _, tag := range tags {
-					assert.True(t, strings.HasPrefix(tag.Name, "v1"),
-						"Tag %s should match filter %s", tag.Name, tt.tagFilter)
+					assert.True(t, strings.HasPrefix(tag.Name, "v1"))
 				}
 			}
 		})
@@ -521,7 +520,7 @@ func TestBranch(t *testing.T) {
 			got := g.Branch()
 
 			// Check result
-			assert.Equal(t, tt.want, got, "Expected branch name %q, got %q", tt.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -595,7 +594,7 @@ func TestIsDetached(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, got, "Expected IsDetached() to return %v, got %v", tt.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -683,7 +682,7 @@ func TestTag(t *testing.T) {
 
 			// Parse version
 			semverVersion, err := semver.NewVersion(tt.version)
-			assert.NoError(t, err, "Failed to parse version")
+			assert.NoError(t, err)
 
 			// Call the Tag function
 			tag, err := g.Tag(*semverVersion, tt.annotate, tt.local)
@@ -696,13 +695,13 @@ func TestTag(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, tag, "Expected tag %q, got %q", tt.want, tag)
+			assert.Equal(t, tt.want, tag)
 
 			// Verify the tag was created
 			cmd := exec.Command("git", "tag", "-l", tag)
 			output, err := cmd.CombinedOutput()
 			assert.NoError(t, err)
-			assert.Contains(t, string(output), tag, "Tag %q should exist", tag)
+			assert.Contains(t, string(output), tag)
 
 			// If annotated, verify it's an annotated tag
 			if tt.annotate {
@@ -713,8 +712,7 @@ func TestTag(t *testing.T) {
 				// Annotated tags should include the message
 				expectedMsg := fmt.Sprintf("Version %d.%d.%d",
 					semverVersion.Major(), semverVersion.Minor(), semverVersion.Patch())
-				assert.Contains(t, string(output), expectedMsg,
-					"Annotated tag should contain message %q", expectedMsg)
+				assert.Contains(t, string(output), expectedMsg)
 			}
 
 			// If we tried to push, verify the tag was pushed to the remote
@@ -722,7 +720,7 @@ func TestTag(t *testing.T) {
 				cmd := exec.Command("git", "ls-remote", "--tags", "origin", tag)
 				output, err := cmd.CombinedOutput()
 				assert.NoError(t, err)
-				assert.Contains(t, string(output), tag, "Tag %q should exist in remote", tag)
+				assert.Contains(t, string(output), tag)
 			}
 		})
 	}
