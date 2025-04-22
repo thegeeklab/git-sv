@@ -9,12 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/assert"
 )
 
 type testRepo struct {
-	commits int // Total number of commits to create
-	tags    int // Number of tags to create
+	commits     int  // Total number of commits to create
+	tags        int  // Number of tags to create
+	setupRemote bool // Whether to set up a remote repository
 }
 
 // setupGitRepo creates a temporary git repository with optional commit history
@@ -70,6 +72,19 @@ func setupGitRepo(t *testing.T, tr testRepo) string {
 				runGitCommand(t, "tag", fmt.Sprintf("v%d.0.0", tagNumber))
 			}
 		}
+	}
+
+	// If we need to set up a remote repository
+	if tr.setupRemote {
+		// Create a bare repository to act as a remote
+		remoteDir := t.TempDir()
+		runGitCommand(t, "init", "--bare", remoteDir)
+
+		// Add the remote to the local repo
+		runGitCommand(t, "remote", "add", "origin", remoteDir)
+
+		// Make an initial push to the remote
+		runGitCommand(t, "push", "origin", "main")
 	}
 
 	return tmpDir
@@ -139,7 +154,7 @@ func TestLastTag(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup git repository with minimal configuration
-			_ = setupGitRepo(t, testRepo{commits: 0, tags: 0})
+			_ = setupGitRepo(t, testRepo{})
 
 			// Run the test-specific setup
 			tt.setupFunc(t)
@@ -178,7 +193,7 @@ func TestLastTagWithMultipleVersions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup git repository with minimal configuration
-			_ = setupGitRepo(t, testRepo{commits: 0, tags: 0})
+			_ = setupGitRepo(t, testRepo{})
 
 			// Create tags
 			for _, tag := range tt.tags {
@@ -206,28 +221,28 @@ func TestLog(t *testing.T) {
 		{
 			name:     "empty range",
 			logRange: NewLogRange(HashRange, "", ""),
-			repo:     testRepo{commits: 3, tags: 0},
+			repo:     testRepo{commits: 3},
 			want:     4, // 3 commits + initial commit
 			wantErr:  false,
 		},
 		{
 			name:     "hash range with start and end",
 			logRange: NewLogRange(HashRange, "HEAD~2", "HEAD"),
-			repo:     testRepo{commits: 3, tags: 0},
+			repo:     testRepo{commits: 3},
 			want:     2,
 			wantErr:  false,
 		},
 		{
 			name:     "hash range with only end",
 			logRange: NewLogRange(HashRange, "", "HEAD~1"),
-			repo:     testRepo{commits: 3, tags: 0},
+			repo:     testRepo{commits: 3},
 			want:     3, // Initial commit + first 2 commits
 			wantErr:  false,
 		},
 		{
 			name:     "date range",
 			logRange: NewLogRange(DateRange, time.Now().AddDate(0, 0, -1).Format("2006-01-02"), time.Now().Format("2006-01-02")),
-			repo:     testRepo{commits: 3, tags: 0},
+			repo:     testRepo{commits: 3},
 			want:     4, // All commits should be from today
 			wantErr:  false,
 		},
@@ -241,7 +256,7 @@ func TestLog(t *testing.T) {
 		{
 			name:     "invalid git command",
 			logRange: NewLogRange(HashRange, "invalid-ref", ""),
-			repo:     testRepo{commits: 1, tags: 0},
+			repo:     testRepo{commits: 1},
 			want:     0,
 			wantErr:  true,
 		},
@@ -292,7 +307,7 @@ func TestCommit(t *testing.T) {
 			header:  "feat: add new feature",
 			body:    "This is the body of the commit message\nIt can span multiple lines",
 			footer:  "Refs: #123",
-			repo:    testRepo{commits: 1, tags: 0},
+			repo:    testRepo{commits: 1},
 			wantErr: false,
 		},
 		{
@@ -300,7 +315,7 @@ func TestCommit(t *testing.T) {
 			header:  "fix: fix a bug",
 			body:    "",
 			footer:  "Closes: #456",
-			repo:    testRepo{commits: 1, tags: 0},
+			repo:    testRepo{commits: 1},
 			wantErr: false,
 		},
 		{
@@ -308,7 +323,7 @@ func TestCommit(t *testing.T) {
 			header:  "docs: update documentation",
 			body:    "Update the README with new information",
 			footer:  "",
-			repo:    testRepo{commits: 1, tags: 0},
+			repo:    testRepo{commits: 1},
 			wantErr: false,
 		},
 		{
@@ -316,7 +331,7 @@ func TestCommit(t *testing.T) {
 			header:  "",
 			body:    "",
 			footer:  "",
-			repo:    testRepo{commits: 1, tags: 0},
+			repo:    testRepo{commits: 1},
 			wantErr: true, // Git will reject a commit with an empty message
 		},
 	}
@@ -378,7 +393,7 @@ func TestTags(t *testing.T) {
 	}{
 		{
 			name:      "no tags",
-			repo:      testRepo{commits: 3, tags: 0},
+			repo:      testRepo{commits: 3},
 			tagFilter: "",
 			want:      0,
 			wantErr:   false,
@@ -392,7 +407,7 @@ func TestTags(t *testing.T) {
 		},
 		{
 			name:      "with tag filter",
-			repo:      testRepo{commits: 0, tags: 0},
+			repo:      testRepo{},
 			tagFilter: "v1*",
 			extraSetup: func(t *testing.T) {
 				runGitCommand(t, "tag", "v1.0.0")
@@ -404,7 +419,7 @@ func TestTags(t *testing.T) {
 		},
 		{
 			name:      "with annotated tags",
-			repo:      testRepo{commits: 0, tags: 0},
+			repo:      testRepo{},
 			tagFilter: "",
 			extraSetup: func(t *testing.T) {
 				// Create annotated tags
@@ -419,8 +434,7 @@ func TestTags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup git repository
-			repo := setupGitRepo(t, tt.repo)
-			t.Chdir(repo)
+			_ = setupGitRepo(t, tt.repo)
 
 			// Run any extra setup if provided
 			if tt.extraSetup != nil {
@@ -469,12 +483,12 @@ func TestBranch(t *testing.T) {
 	}{
 		{
 			name: "default branch",
-			repo: testRepo{commits: 1, tags: 0},
+			repo: testRepo{commits: 1},
 			want: "main",
 		},
 		{
 			name: "new branch",
-			repo: testRepo{commits: 1, tags: 0},
+			repo: testRepo{commits: 1},
 			extraSetup: func(t *testing.T) {
 				runGitCommand(t, "checkout", "-b", "feature/new-feature")
 			},
@@ -482,7 +496,7 @@ func TestBranch(t *testing.T) {
 		},
 		{
 			name: "detached HEAD",
-			repo: testRepo{commits: 3, tags: 0},
+			repo: testRepo{commits: 3},
 			extraSetup: func(t *testing.T) {
 				// Checkout a specific commit to create a detached HEAD state
 				runGitCommand(t, "checkout", "HEAD~1")
@@ -494,8 +508,7 @@ func TestBranch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup git repository
-			repo := setupGitRepo(t, tt.repo)
-			t.Chdir(repo)
+			_ = setupGitRepo(t, tt.repo)
 
 			// Run any extra setup if provided
 			if tt.extraSetup != nil {
@@ -524,13 +537,13 @@ func TestIsDetached(t *testing.T) {
 	}{
 		{
 			name:    "on branch (not detached)",
-			repo:    testRepo{commits: 1, tags: 0},
+			repo:    testRepo{commits: 1},
 			want:    false,
 			wantErr: false,
 		},
 		{
 			name: "on new branch (not detached)",
-			repo: testRepo{commits: 1, tags: 0},
+			repo: testRepo{commits: 1},
 			extraSetup: func(t *testing.T) {
 				runGitCommand(t, "checkout", "-b", "feature/new-feature")
 			},
@@ -539,7 +552,7 @@ func TestIsDetached(t *testing.T) {
 		},
 		{
 			name: "detached HEAD",
-			repo: testRepo{commits: 3, tags: 0},
+			repo: testRepo{commits: 3},
 			extraSetup: func(t *testing.T) {
 				// Checkout a specific commit to create a detached HEAD state
 				runGitCommand(t, "checkout", "HEAD~1")
@@ -562,8 +575,7 @@ func TestIsDetached(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup git repository
-			repo := setupGitRepo(t, tt.repo)
-			t.Chdir(repo)
+			_ = setupGitRepo(t, tt.repo)
 
 			// Run any extra setup if provided
 			if tt.extraSetup != nil {
@@ -585,6 +597,133 @@ func TestIsDetached(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got, "Expected IsDetached() to return %v, got %v", tt.want, got)
+		})
+	}
+}
+
+func TestTag(t *testing.T) {
+	tests := []struct {
+		name       string
+		version    string
+		annotate   bool
+		local      bool
+		repo       testRepo
+		extraSetup func(t *testing.T)
+		want       string
+		wantErr    bool
+	}{
+		{
+			name:     "simple tag",
+			version:  "1.0.0",
+			annotate: false,
+			local:    true,
+			repo:     testRepo{commits: 1},
+			want:     "1.0.0",
+			wantErr:  false,
+		},
+		{
+			name:     "annotated tag",
+			version:  "2.1.0",
+			annotate: true,
+			local:    true,
+			repo:     testRepo{commits: 1},
+			want:     "2.1.0",
+			wantErr:  false,
+		},
+		{
+			name:     "tag already exists",
+			version:  "1.0.0",
+			annotate: false,
+			local:    true,
+			repo:     testRepo{commits: 1},
+			extraSetup: func(t *testing.T) {
+				// Create a tag that will conflict
+				runGitCommand(t, "tag", "1.0.0")
+			},
+			want:    "1.0.0",
+			wantErr: true, // Should fail because tag already exists
+		},
+		{
+			name:     "push to remote",
+			version:  "1.0.0",
+			annotate: false,
+			local:    false, // Try to push
+			repo:     testRepo{commits: 1, setupRemote: true},
+			want:     "1.0.0",
+			wantErr:  false, // Should succeed because we set up a remote
+		},
+		{
+			name:     "push attempt without remote",
+			version:  "1.0.0",
+			annotate: false,
+			local:    false, // Try to push
+			repo:     testRepo{commits: 1},
+			want:     "1.0.0",
+			wantErr:  true, // Should fail because there's no remote
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup git repository
+			_ = setupGitRepo(t, tt.repo)
+
+			// Run any extra setup if provided
+			if tt.extraSetup != nil {
+				tt.extraSetup(t)
+			}
+
+			// Create GitSV instance
+			g := New()
+
+			// If no custom pattern was set in extraSetup, use default
+			if g.Config.Tag.Pattern == nil {
+				pattern := "%d.%d.%d"
+				g.Config.Tag.Pattern = &pattern
+			}
+
+			// Parse version
+			semverVersion, err := semver.NewVersion(tt.version)
+			assert.NoError(t, err, "Failed to parse version")
+
+			// Call the Tag function
+			tag, err := g.Tag(*semverVersion, tt.annotate, tt.local)
+
+			// Check error
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, tag, "Expected tag %q, got %q", tt.want, tag)
+
+			// Verify the tag was created
+			cmd := exec.Command("git", "tag", "-l", tag)
+			output, err := cmd.CombinedOutput()
+			assert.NoError(t, err)
+			assert.Contains(t, string(output), tag, "Tag %q should exist", tag)
+
+			// If annotated, verify it's an annotated tag
+			if tt.annotate {
+				cmd := exec.Command("git", "tag", "-l", "-n", tag)
+				output, err := cmd.CombinedOutput()
+				assert.NoError(t, err)
+
+				// Annotated tags should include the message
+				expectedMsg := fmt.Sprintf("Version %d.%d.%d",
+					semverVersion.Major(), semverVersion.Minor(), semverVersion.Patch())
+				assert.Contains(t, string(output), expectedMsg,
+					"Annotated tag should contain message %q", expectedMsg)
+			}
+
+			// If we tried to push, verify the tag was pushed to the remote
+			if !tt.local && tt.repo.setupRemote {
+				cmd := exec.Command("git", "ls-remote", "--tags", "origin", tag)
+				output, err := cmd.CombinedOutput()
+				assert.NoError(t, err)
+				assert.Contains(t, string(output), tag, "Tag %q should exist in remote", tag)
+			}
 		})
 	}
 }
