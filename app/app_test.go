@@ -30,7 +30,7 @@ func setupGitRepo(t *testing.T, tr testRepo) string {
 	// Change to the temporary directory
 	t.Chdir(tmpDir)
 	// Initialize git repository
-	runGitCommand(t, "init")
+	runGitCommand(t, "init", "-b", "main")
 	runGitCommand(t, "config", "user.email", "test@example.com")
 	runGitCommand(t, "config", "user.name", "Test User")
 	runGitCommand(t, "config", "commit.gpgsign", "false")
