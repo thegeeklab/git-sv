@@ -15,6 +15,7 @@ import (
 	"github.com/thegeeklab/git-sv/sv"
 	"github.com/thegeeklab/git-sv/sv/formatter"
 	"github.com/thegeeklab/git-sv/templates"
+	"gopkg.in/src-d/go-git.v4"
 )
 
 const (
@@ -217,20 +218,21 @@ func (g GitSV) Branch() string {
 
 // IsDetached check if is detached.
 func (g GitSV) IsDetached() (bool, error) {
-	cmd := exec.Command("git", "symbolic-ref", "-q", "HEAD")
-
-	out, err := cmd.CombinedOutput()
-	// -q: do not issue an error message if the <name> is not a symbolic ref, but a detached HEAD;
-	// instead exit with non-zero status silently.
-	if output := string(out); err != nil {
-		if output == "" {
-			return true, nil
-		}
-
-		return false, fmt.Errorf("%w: %s", errUnknownGitError, output)
+	repo, err := git.PlainOpen(".")
+	if err != nil {
+		return false, err
 	}
 
-	return false, nil
+	head, err := repo.Head()
+	if err != nil {
+		return false, err
+	}
+
+	if head.Name().IsBranch() {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func parseTagsOutput(input string) ([]Tag, error) {
