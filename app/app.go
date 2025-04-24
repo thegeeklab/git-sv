@@ -1,14 +1,10 @@
 package app
 
 import (
-	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"path/filepath"
 	"sort"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -21,14 +17,9 @@ import (
 	"github.com/thegeeklab/git-sv/templates"
 )
 
-const (
-	logSeparator = ">###"
-	endLine      = ">~~~"
-)
-
 var (
-	errUnknownGitError  = errors.New("git command failed")
-	errInvalidCommitLog = errors.New("invalid commit log format")
+	ErrNoDataFound        = errors.New("no data found in repository")
+	ErrCommitMessageEmpty = errors.New("commit message is empty")
 )
 
 // Tag git tag info.
@@ -90,69 +81,55 @@ func New() GitSV {
 
 // LastTag get last tag, if no tag found, return empty.
 func (g GitSV) LastTag() string {
-	// Open the repository
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		return ""
 	}
 
-	// Get all tag references
 	tagRefs, err := repo.Tags()
 	if err != nil {
 		return ""
 	}
 
-	var tags []struct {
-		Name string
-		Time time.Time
-	}
+	var tags []Tag
 
 	// Collect all tags with their creation time
 	err = tagRefs.ForEach(func(ref *plumbing.Reference) error {
+		tagName := ref.Name().Short()
+
 		// Skip tags that don't match the filter
 		if *g.Config.Tag.Filter != "" {
 			matched, err := filepath.Match(*g.Config.Tag.Filter, ref.Name().Short())
-			if err != nil || !matched {
+			if err != nil {
+				return err
+			}
+
+			if !matched {
 				return nil
 			}
 		}
 
+		// Get tag date (try annotated tag first, then commit)
+		var tagDate time.Time
+
 		// Try to get the tag object (for annotated tags)
 		tagObj, err := repo.TagObject(ref.Hash())
 		if err == nil {
-			// For annotated tags, use the tagger date
-			tags = append(tags, struct {
-				Name string
-				Time time.Time
-			}{
-				Name: ref.Name().Short(),
-				Time: tagObj.Tagger.When,
-			})
-			return nil
+			tagDate = tagObj.Tagger.When
+		} else {
+			// For lightweight tags, try to get the commit
+			// If we can't get a date, it's ok - we'll use zero time
+			commit, err := repo.CommitObject(ref.Hash())
+			if err == nil {
+				tagDate = commit.Committer.When
+			}
 		}
 
-		// For lightweight tags, try to get the commit
-		commit, err := repo.CommitObject(ref.Hash())
-		if err != nil {
-			// If we can't get the commit, just use the tag name without date info
-			tags = append(tags, struct {
-				Name string
-				Time time.Time
-			}{
-				Name: ref.Name().Short(),
-				Time: time.Time{}, // Zero time
-			})
-			return nil
-		}
-
-		// Use the commit date for lightweight tags
-		tags = append(tags, struct {
-			Name string
-			Time time.Time
-		}{
-			Name: ref.Name().Short(),
-			Time: commit.Committer.When,
+		tags = append(tags, Tag{
+			Name: tagName,
+			Date: tagDate,
 		})
+
 		return nil
 	})
 
@@ -172,7 +149,7 @@ func (g GitSV) LastTag() string {
 		}
 
 		// Otherwise, compare by date (newer first)
-		return tags[i].Time.Before(tags[j].Time)
+		return tags[i].Date.Before(tags[j].Date)
 	})
 
 	// Return the last tag (highest version or newest)
@@ -181,60 +158,31 @@ func (g GitSV) LastTag() string {
 
 // Log return git log.
 func (g GitSV) Log(lr LogRange) ([]sv.CommitLog, error) {
-	// Open the repository
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repository: %w", err)
 	}
 
-	// Prepare log options
 	logOptions := &git.LogOptions{}
 
-	// Handle different range types
-	if lr.rangeType == DateRange {
-		// Convert date strings to time.Time
-		if lr.start != "" {
-			startTime, err := time.Parse("2006-01-02", lr.start)
-			if err == nil {
-				logOptions.Since = &startTime
-			}
-		}
-		if lr.end != "" {
-			endTime, err := time.Parse("2006-01-02", lr.end)
-			if err == nil {
-				// Add a day to make it inclusive, matching the original behavior
-				endTime = endTime.AddDate(0, 0, 1)
-				logOptions.Until = &endTime
-			}
-		}
-	} else {
-		// For hash/tag ranges, we need to resolve the end revision
-		endRevision := plumbing.Revision(str(lr.end, "HEAD"))
-		endRef, err := repo.ResolveRevision(endRevision)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve end revision: %w", err)
-		}
-		logOptions.From = *endRef
+	if err := configureLogOptions(repo, lr, logOptions); err != nil {
+		return nil, err
 	}
 
-	// Get the commit iterator
 	iter, err := repo.Log(logOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit log: %w", err)
 	}
 
-	// If we have a start revision for hash/tag range, we need to exclude commits reachable from it
-	var excludeHashes map[plumbing.Hash]bool
-	if lr.start != "" && lr.rangeType != DateRange {
-		excludeHashes, err = getCommitHashesFrom(repo, lr.start)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get excluded commits: %w", err)
-		}
+	excludeHashes, err := getExcludeHashes(repo, lr)
+	if err != nil && !errors.Is(err, ErrNoDataFound) {
+		return nil, err
 	}
 
 	var logs []sv.CommitLog
+
 	err = iter.ForEach(func(c *object.Commit) error {
-		// Skip commits that are reachable from the start revision
+		// Skip excluded commits
 		if excludeHashes != nil && excludeHashes[c.Hash] {
 			return nil
 		}
@@ -242,25 +190,20 @@ func (g GitSV) Log(lr LogRange) ([]sv.CommitLog, error) {
 		// Parse the commit message
 		message, err := g.MessageProcessor.Parse(c.Message, "")
 		if err != nil {
-			return nil // Skip commits with parsing errors
+			return err
 		}
 
-		// Format the date as YYYY-MM-DD
-		date := c.Author.When.Format("2006-01-02")
-
-		// Create the commit log
-		log := sv.CommitLog{
-			Date:       date,
+		// Add commit to logs
+		logs = append(logs, sv.CommitLog{
+			Date:       c.Author.When.Format("2006-01-02"),
 			Timestamp:  int(c.Author.When.Unix()),
 			AuthorName: c.Author.Name,
-			Hash:       c.Hash.String()[:7], // Short hash
+			Hash:       c.Hash.String()[:7],
 			Message:    message,
-		}
+		})
 
-		logs = append(logs, log)
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to iterate through commits: %w", err)
 	}
@@ -268,55 +211,33 @@ func (g GitSV) Log(lr LogRange) ([]sv.CommitLog, error) {
 	return logs, nil
 }
 
-// isAncestor checks if commit is an ancestor of potentialAncestor
-func isAncestor(repo *git.Repository, commit, potentialAncestor plumbing.Hash) (bool, error) {
-	// Get the commit object for the potential ancestor
-	ancestorCommit, err := repo.CommitObject(potentialAncestor)
-	if err != nil {
-		return false, err
-	}
-
-	// Get the commit object for the commit we're checking
-	targetCommit, err := repo.CommitObject(commit)
-	if err != nil {
-		return false, err
-	}
-
-	// Check if the potential ancestor is reachable from the commit
-	return ancestorCommit.IsAncestor(targetCommit)
-}
-
 // Commit runs git sv.
 func (g GitSV) Commit(header, body, footer string) error {
-	// Check if all parts are empty
 	if header == "" && body == "" && footer == "" {
-		return errors.New("commit message cannot be empty")
+		return ErrCommitMessageEmpty
 	}
 
-	// Open the repository
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		return fmt.Errorf("failed to open git repository: %w", err)
 	}
 
-	// Get the worktree
 	worktree, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	// Construct the full commit message with proper spacing
 	commitMsg := header
 	if body != "" {
 		commitMsg += "\n\n" + body
 	}
+
 	if footer != "" {
 		commitMsg += "\n\n" + footer
 	}
 
-	// Commit the changes
 	_, err = worktree.Commit(commitMsg, &git.CommitOptions{
-		All: true, // Stage all modified files
+		All: true,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
@@ -330,19 +251,16 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 	tag := fmt.Sprintf(*g.Config.Tag.Pattern, version.Major(), version.Minor(), version.Patch())
 	tagMsg := fmt.Sprintf("Version %d.%d.%d", version.Major(), version.Minor(), version.Patch())
 
-	// Open the repository
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		return tag, fmt.Errorf("failed to open git repository: %w", err)
 	}
 
-	// Get the HEAD reference
 	head, err := repo.Head()
 	if err != nil {
 		return tag, fmt.Errorf("failed to get HEAD reference: %w", err)
 	}
 
-	// Create the tag
 	var tagOpts *git.CreateTagOptions
 	if annotate {
 		// Create an annotated tag with a message
@@ -351,31 +269,26 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 		}
 	}
 
-	// Create the tag pointing to the current HEAD
 	_, err = repo.CreateTag(tag, head.Hash(), tagOpts)
 	if err != nil {
 		return tag, fmt.Errorf("failed to create tag: %w", err)
 	}
 
-	// If local is true, don't push the tag
 	if local {
 		return tag, nil
 	}
 
-	// Push the tag to the remote
 	remote, err := repo.Remote("origin")
 	if err != nil {
 		return tag, fmt.Errorf("failed to get remote: %w", err)
 	}
 
-	// Create the refspec for the tag
 	refspec := fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag)
 
-	// Push the tag
 	err = remote.Push(&git.PushOptions{
 		RefSpecs: []config.RefSpec{config.RefSpec(refspec)},
 	})
-	if err != nil && err != git.NoErrAlreadyUpToDate {
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return tag, fmt.Errorf("failed to push tag: %w", err)
 	}
 
@@ -408,13 +321,18 @@ func (g GitSV) Tags() ([]Tag, error) {
 		// Apply the filter pattern if specified
 		if *g.Config.Tag.Filter != "" {
 			matched, err := filepath.Match(*g.Config.Tag.Filter, tagName)
-			if err != nil || !matched {
+			if err != nil {
+				return err
+			}
+
+			if !matched {
 				return nil
 			}
 		}
 
 		// Get the tag object or commit to extract the date
 		var tagDate time.Time
+
 		tagObj, err := repo.TagObject(ref.Hash())
 		if err == nil {
 			// Annotated tag
@@ -423,9 +341,9 @@ func (g GitSV) Tags() ([]Tag, error) {
 			// Lightweight tag - get the commit
 			commit, err := repo.CommitObject(ref.Hash())
 			if err != nil {
-				// Skip if we can't get date information
-				return nil
+				return err
 			}
+
 			tagDate = commit.Committer.When
 		}
 
@@ -433,9 +351,9 @@ func (g GitSV) Tags() ([]Tag, error) {
 			Name: tagName,
 			Date: tagDate,
 		})
+
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -486,97 +404,6 @@ func (g GitSV) IsDetached() (bool, error) {
 	return true, nil
 }
 
-func parseTagsOutput(input string) ([]Tag, error) {
-	scanner := bufio.NewScanner(strings.NewReader(input))
-
-	var result []Tag
-
-	for scanner.Scan() {
-		if line := strings.TrimSpace(scanner.Text()); line != "" {
-			values := strings.Split(line, "#")
-			date, _ := time.Parse("2006-01-02 15:04:05 -0700", values[0]) // ignore invalid dates
-			result = append(result, Tag{Name: values[1], Date: date})
-		}
-	}
-
-	return result, nil
-}
-
-func parseLogOutput(messageProcessor sv.MessageProcessor, log string) ([]sv.CommitLog, error) {
-	scanner := bufio.NewScanner(strings.NewReader(log))
-	scanner.Split(splitAt([]byte(endLine)))
-
-	var logs []sv.CommitLog
-
-	for scanner.Scan() {
-		if text := strings.TrimSpace(strings.Trim(scanner.Text(), "\"")); text != "" {
-			log, err := parseCommitLog(messageProcessor, text)
-			if err != nil {
-				return nil, err
-			}
-
-			logs = append(logs, log)
-		}
-	}
-
-	return logs, nil
-}
-
-func parseCommitLog(messageProcessor sv.MessageProcessor, c string) (sv.CommitLog, error) {
-	logFieldCount := 6
-	content := strings.Split(strings.Trim(c, "\""), logSeparator)
-
-	if len(content) < logFieldCount {
-		return sv.CommitLog{}, fmt.Errorf("%w: missing required fields", errInvalidCommitLog)
-	}
-
-	timestamp, _ := strconv.Atoi(content[1])
-
-	message, err := messageProcessor.Parse(content[4], content[5])
-	if err != nil {
-		return sv.CommitLog{}, err
-	}
-
-	return sv.CommitLog{
-		Date:       content[0],
-		Timestamp:  timestamp,
-		AuthorName: content[2],
-		Hash:       content[3],
-		Message:    message,
-	}, nil
-}
-
-func splitAt(b []byte) func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) { //nolint:nonamedreturns
-		if atEOF && len(data) == 0 {
-			return 0, nil, nil
-		}
-
-		if i := bytes.Index(data, b); i >= 0 {
-			return i + len(b), data[0:i], nil
-		}
-
-		if atEOF {
-			return len(data), data, nil
-		}
-
-		return 0, nil, nil
-	}
-}
-
-func addDay(value string) string {
-	if value == "" {
-		return value
-	}
-
-	t, err := time.Parse("2006-01-02", value)
-	if err != nil { // keep original value if is not date format
-		return value
-	}
-
-	return t.AddDate(0, 0, 1).Format("2006-01-02")
-}
-
 func str(value, defaultValue string) string {
 	if value != "" {
 		return value
@@ -585,7 +412,7 @@ func str(value, defaultValue string) string {
 	return defaultValue
 }
 
-// getCommitHashesFrom returns a map of commit hashes reachable from the given revision
+// getCommitHashesFrom returns a map of commit hashes reachable from the given revision.
 func getCommitHashesFrom(repo *git.Repository, revision string) (map[plumbing.Hash]bool, error) {
 	startRef, err := repo.ResolveRevision(plumbing.Revision(revision))
 	if err != nil {
@@ -599,8 +426,10 @@ func getCommitHashesFrom(repo *git.Repository, revision string) (map[plumbing.Ha
 	}
 
 	hashes := make(map[plumbing.Hash]bool)
+
 	err = iter.ForEach(func(c *object.Commit) error {
 		hashes[c.Hash] = true
+
 		return nil
 	})
 	if err != nil {
@@ -608,4 +437,58 @@ func getCommitHashesFrom(repo *git.Repository, revision string) (map[plumbing.Ha
 	}
 
 	return hashes, nil
+}
+
+// configureLogOptions sets up the git.LogOptions based on the LogRange.
+func configureLogOptions(repo *git.Repository, lr LogRange, options *git.LogOptions) error {
+	if lr.rangeType == DateRange {
+		configureDateRangeOptions(lr, options)
+
+		return nil
+	}
+
+	// For hash/tag ranges, resolve the end revision
+	endRevision := plumbing.Revision(str(lr.end, "HEAD"))
+
+	endRef, err := repo.ResolveRevision(endRevision)
+	if err != nil {
+		return fmt.Errorf("failed to resolve end revision: %w", err)
+	}
+
+	options.From = *endRef
+
+	return nil
+}
+
+// configureDateRangeOptions configures git.LogOptions for date-based ranges.
+func configureDateRangeOptions(lr LogRange, options *git.LogOptions) {
+	if lr.start != "" {
+		startTime, err := time.Parse("2006-01-02", lr.start)
+		if err == nil {
+			options.Since = &startTime
+		}
+	}
+
+	if lr.end != "" {
+		endTime, err := time.Parse("2006-01-02", lr.end)
+		if err == nil {
+			// Add a day to make it inclusive
+			endTime = endTime.AddDate(0, 0, 1)
+			options.Until = &endTime
+		}
+	}
+}
+
+// getExcludeHashes returns commits to exclude based on the start revision.
+func getExcludeHashes(repo *git.Repository, lr LogRange) (map[plumbing.Hash]bool, error) {
+	if lr.start == "" || lr.rangeType == DateRange {
+		return nil, ErrNoDataFound
+	}
+
+	excludeHashes, err := getCommitHashesFrom(repo, lr.start)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get excluded commits: %w", err)
+	}
+
+	return excludeHashes, nil
 }
