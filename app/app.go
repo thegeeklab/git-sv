@@ -283,10 +283,10 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 		return tag, fmt.Errorf("failed to get remote: %w", err)
 	}
 
-	refspec := fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag)
+	refSpec := fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag)
 
 	err = remote.Push(&git.PushOptions{
-		RefSpecs: []config.RefSpec{config.RefSpec(refspec)},
+		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return tag, fmt.Errorf("failed to push tag: %w", err)
@@ -299,30 +299,25 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 func (g GitSV) Tags() ([]Tag, error) {
 	repo, err := git.PlainOpen(".")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open git repository: %w", err)
 	}
 
-	// Get all references
-	refs, err := repo.References()
+	tagIter, err := repo.Tags()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get repository tags: %w", err)
 	}
 
 	var tags []Tag
-	// Filter for tag references and apply the filter pattern
-	err = refs.ForEach(func(ref *plumbing.Reference) error {
-		// Check if it's a tag reference
-		if !ref.Name().IsTag() {
-			return nil
-		}
 
+	// Process tag references directly instead of getting all references first
+	err = tagIter.ForEach(func(ref *plumbing.Reference) error {
 		tagName := ref.Name().Short()
 
 		// Apply the filter pattern if specified
 		if *g.Config.Tag.Filter != "" {
 			matched, err := filepath.Match(*g.Config.Tag.Filter, tagName)
 			if err != nil {
-				return err
+				return fmt.Errorf("invalid tag filter pattern: %w", err)
 			}
 
 			if !matched {
@@ -330,21 +325,19 @@ func (g GitSV) Tags() ([]Tag, error) {
 			}
 		}
 
-		// Get the tag object or commit to extract the date
 		var tagDate time.Time
 
+		// Try to get annotated tag first
 		tagObj, err := repo.TagObject(ref.Hash())
 		if err == nil {
-			// Annotated tag
 			tagDate = tagObj.Tagger.When
 		} else {
-			// Lightweight tag - get the commit
+			// For lightweight tags, get the commit
 			commit, err := repo.CommitObject(ref.Hash())
-			if err != nil {
-				return err
+			// If we can't get a date, use zero time but don't fail
+			if err == nil {
+				tagDate = commit.Committer.When
 			}
-
-			tagDate = commit.Committer.When
 		}
 
 		tags = append(tags, Tag{
@@ -355,10 +348,10 @@ func (g GitSV) Tags() ([]Tag, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error processing tags: %w", err)
 	}
 
-	// Sort tags by date (oldest first) to match the original behavior
+	// Sort tags by date (oldest first)
 	sort.Slice(tags, func(i, j int) bool {
 		return tags[i].Date.Before(tags[j].Date)
 	})
