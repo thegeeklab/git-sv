@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -205,6 +206,10 @@ func (g GitSV) Log(lr LogRange) ([]sv.CommitLog, error) {
 		return nil
 	})
 	if err != nil {
+		if isShallowClone(repo) && isObjectNotFoundError(err) {
+			return logs, nil
+		}
+
 		return nil, fmt.Errorf("failed to iterate through commits: %w", err)
 	}
 
@@ -407,18 +412,27 @@ func str(value, defaultValue string) string {
 
 // getCommitHashesFrom returns a map of commit hashes reachable from the given revision.
 func getCommitHashesFrom(repo *git.Repository, revision string) (map[plumbing.Hash]bool, error) {
+	hashes := make(map[plumbing.Hash]bool)
+
 	startRef, err := repo.ResolveRevision(plumbing.Revision(revision))
 	if err != nil {
+		if isShallowClone(repo) && isObjectNotFoundError(err) {
+			return hashes, nil
+		}
+
 		return nil, err
 	}
 
 	// Get all commits reachable from the start revision
 	iter, err := repo.Log(&git.LogOptions{From: *startRef})
 	if err != nil {
+		// For shallow clones with missing objects, return empty map
+		if isShallowClone(repo) && isObjectNotFoundError(err) {
+			return hashes, nil
+		}
+
 		return nil, err
 	}
-
-	hashes := make(map[plumbing.Hash]bool)
 
 	err = iter.ForEach(func(c *object.Commit) error {
 		hashes[c.Hash] = true
@@ -426,10 +440,27 @@ func getCommitHashesFrom(repo *git.Repository, revision string) (map[plumbing.Ha
 		return nil
 	})
 	if err != nil {
+		if isShallowClone(repo) && isObjectNotFoundError(err) {
+			return hashes, nil
+		}
+
 		return nil, err
 	}
 
 	return hashes, nil
+}
+
+// isObjectNotFoundError checks if the error is due to an object not found.
+func isObjectNotFoundError(err error) bool {
+	return err != nil && (strings.Contains(err.Error(), "object not found") ||
+		strings.Contains(err.Error(), "reference not found"))
+}
+
+// isShallowClone checks if the repository is a shallow clone.
+func isShallowClone(repo *git.Repository) bool {
+	_, err := repo.Storer.Reference(plumbing.ReferenceName("shallow"))
+
+	return err == nil
 }
 
 // configureLogOptions sets up the git.LogOptions based on the LogRange.
