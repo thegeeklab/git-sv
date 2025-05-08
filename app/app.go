@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -452,8 +451,8 @@ func getCommitHashesFrom(repo *git.Repository, revision string) (map[plumbing.Ha
 
 // isObjectNotFoundError checks if the error is due to an object not found.
 func isObjectNotFoundError(err error) bool {
-	return err != nil && (strings.Contains(err.Error(), "object not found") ||
-		strings.Contains(err.Error(), "reference not found"))
+	return err != nil && (errors.Is(err, plumbing.ErrObjectNotFound) ||
+		errors.Is(err, plumbing.ErrReferenceNotFound))
 }
 
 // isShallowClone checks if the repository is a shallow clone.
