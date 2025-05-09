@@ -22,6 +22,9 @@ steps:
     image: docker.io/lycheeverse/lychee
     commands:
       - lychee --no-progress --format detailed README.md
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token_ro
 
   - name: pushrm-dockerhub
     image: docker.io/chko/docker-pushrm:1
