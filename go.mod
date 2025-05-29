@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/go-git/go-git/v5 v5.16.0
-	github.com/goccy/go-yaml v1.17.1
+	github.com/goccy/go-yaml v1.18.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
