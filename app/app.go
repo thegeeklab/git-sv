@@ -3,18 +3,26 @@ package app
 import (
 	"errors"
 	"fmt"
+	"net"
+	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/sv"
 	"github.com/thegeeklab/git-sv/sv/formatter"
 	"github.com/thegeeklab/git-sv/templates"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var (
@@ -255,6 +263,12 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 	tag := fmt.Sprintf(*g.Config.Tag.Pattern, version.Major(), version.Minor(), version.Patch())
 	tagMsg := fmt.Sprintf("Version %d.%d.%d", version.Major(), version.Minor(), version.Patch())
 
+	log.Debug().
+		Str("tag", tag).
+		Bool("annotate", annotate).
+		Bool("local", local).
+		Msg("Creating tag")
+
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		return tag, fmt.Errorf("failed to open git repository: %w", err)
@@ -275,27 +289,153 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 
 	_, err = repo.CreateTag(tag, head.Hash(), tagOpts)
 	if err != nil {
+		log.Error().Err(err).Str("tag", tag).Msg("Failed to create tag")
 		return tag, fmt.Errorf("failed to create tag: %w", err)
 	}
 
+	log.Debug().Str("tag", tag).Msg("Tag created successfully")
+
 	if local {
+		log.Debug().Str("tag", tag).Msg("Local tag only, skipping push")
 		return tag, nil
 	}
 
+	log.Debug().Str("tag", tag).Msg("Preparing to push tag to remote")
+
 	remote, err := repo.Remote("origin")
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get remote repository")
 		return tag, fmt.Errorf("failed to get remote: %w", err)
 	}
 
-	refSpec := fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag)
+	log.Debug().Interface("remote", remote.Config()).Msg("Got remote repository details")
 
-	err = remote.Push(&git.PushOptions{
+	refSpec := fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag)
+	log.Debug().Str("refSpec", refSpec).Msg("Pushing tag with refspec")
+
+	// Get SSH auth if the URL uses SSH protocol
+	remoteURL := ""
+	if len(remote.Config().URLs) > 0 {
+		remoteURL = remote.Config().URLs[0]
+	}
+	log.Debug().Str("remoteURL", remoteURL).Msg("Remote URL")
+
+	var auth transport.AuthMethod
+	if strings.HasPrefix(remoteURL, "git@") || strings.HasPrefix(remoteURL, "ssh://") {
+		// Try to get SSH auth with debug logging
+		log.Debug().Msg("Using SSH authentication")
+
+		// Get home directory for SSH keys
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			log.Debug().Err(err).Msg("Failed to get user home directory")
+		} else {
+			// Try to find all potential SSH keys in ~/.ssh directory
+			sshDir := filepath.Join(homeDir, ".ssh")
+			log.Debug().Str("sshDir", sshDir).Msg("Scanning SSH directory for keys")
+
+			// List all files in the .ssh directory
+			entries, err := os.ReadDir(sshDir)
+			if err != nil {
+				log.Debug().Err(err).Msg("Failed to read SSH directory")
+			} else {
+				// Common private key filenames to try first
+				priorityKeyNames := []string{"id_ed25519", "id_rsa", "id_ecdsa", "identity"}
+				keyPaths := []string{}
+
+				// First add priority keys to the list
+				for _, name := range priorityKeyNames {
+					fullPath := filepath.Join(sshDir, name)
+					if _, err := os.Stat(fullPath); err == nil {
+						keyPaths = append(keyPaths, fullPath)
+						log.Debug().Str("keyPath", fullPath).Msg("Found priority SSH key")
+					}
+				}
+
+				// Then add all other files that don't end with .pub and aren't in the known_hosts, config, etc.
+				excludePatterns := []string{".pub$", "known_hosts", "config", "authorized_keys"}
+				for _, entry := range entries {
+					if entry.IsDir() {
+						continue
+					}
+
+					name := entry.Name()
+					skip := false
+
+					// Skip already added priority keys
+					for _, priorityName := range priorityKeyNames {
+						if name == priorityName {
+							skip = true
+							break
+						}
+					}
+					if skip {
+						continue
+					}
+
+					// Skip files matching exclude patterns
+					for _, pattern := range excludePatterns {
+						if matched, _ := regexp.MatchString(pattern, name); matched {
+							skip = true
+							break
+						}
+					}
+					if skip {
+						continue
+					}
+
+					// This might be a private key, add it to the list
+					fullPath := filepath.Join(sshDir, name)
+					keyPaths = append(keyPaths, fullPath)
+					log.Debug().Str("keyPath", fullPath).Msg("Found potential SSH key")
+				}
+
+				// Try each key until one works
+				authSuccess := false
+				for _, keyPath := range keyPaths {
+					log.Debug().Str("trying", keyPath).Msg("Attempting SSH authentication with key")
+
+					// Try to create auth with this key
+					keyAuth, keyErr := gitssh.NewPublicKeysFromFile("git", keyPath, "")
+					if keyErr != nil {
+						log.Debug().Err(keyErr).Str("keyPath", keyPath).Msg("Failed to load SSH key, trying next")
+						continue
+					}
+
+					// Set custom host key callback for debugging
+					keyAuth.HostKeyCallbackHelper.HostKeyCallback = func(hostname string, remote net.Addr, key gossh.PublicKey) error {
+						log.Debug().Str("hostname", hostname).Msg("Ignoring host key verification")
+						return nil
+					}
+
+					// This key loaded successfully, use it
+					auth = keyAuth
+					authSuccess = true
+					log.Debug().Str("keyPath", keyPath).Msg("Successfully loaded SSH key")
+					break
+				}
+
+				if !authSuccess {
+					log.Debug().Msg("Failed to load any SSH keys, continuing without explicit auth")
+				}
+			}
+		}
+	}
+
+	pushOpts := &git.PushOptions{
 		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
-	})
+		Auth:     auth,
+		Progress: os.Stderr, // Show progress and debugging info
+	}
+	log.Debug().Interface("pushOptions", pushOpts).Msg("Push options details")
+
+	err = remote.Push(pushOpts)
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		log.Error().Err(err).Str("tag", tag).Msg("Failed to push tag")
 		return tag, fmt.Errorf("failed to push tag: %w", err)
 	}
 
+	log.Debug().Str("tag", tag).Msg("Tag pushed successfully")
 	return tag, nil
 }
 
