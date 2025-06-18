@@ -2,6 +2,10 @@ module github.com/thegeeklab/git-sv
 
 go 1.24.4
 
+// Pin go-git to fix SSH knownhosts key mismatch regression bug
+// xref: https://github.com/fluxcd/flux2/issues/5385
+replace github.com/go-git/go-git/v5 => github.com/go-git/go-git/v5 v5.16.3-0.20250610123634-8ac015a75d81
+
 require (
 	dario.cat/mergo v1.0.2
 	github.com/Masterminds/semver/v3 v3.3.1
