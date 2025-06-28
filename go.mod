@@ -4,7 +4,7 @@ go 1.24.4
 
 require (
 	dario.cat/mergo v1.0.2
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	// Pin go-git to fix SSH knownhosts key mismatch regression bug
 	// xref: https://github.com/fluxcd/flux2/issues/5385
