@@ -136,7 +136,6 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 			},
 		},
 	}
-
 	if err := app.Run(context.Background(), os.Args); err != nil {
 		log.Fatal().Err(err).Msg("Execution error")
 	}

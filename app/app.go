@@ -132,7 +132,6 @@ func (g GitSV) LastTag() string {
 
 		return nil
 	})
-
 	if err != nil || len(tags) == 0 {
 		return ""
 	}

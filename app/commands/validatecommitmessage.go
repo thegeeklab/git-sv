@@ -41,8 +41,8 @@ func ValidateCommitMessageFlags() []cli.Flag {
 func ValidateCommitMessageHandler(g app.GitSV) cli.ActionFunc {
 	return func(_ context.Context, c *cli.Command) error {
 		branch := g.Branch()
-		detached, derr := g.IsDetached()
 
+		detached, derr := g.IsDetached()
 		if g.MessageProcessor.SkipBranch(branch, derr == nil && detached) {
 			log.Warn().Msg("commit message validation skipped, branch in ignore list or detached...")
 

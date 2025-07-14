@@ -143,8 +143,8 @@ func (p BaseMessageProcessor) SkipBranch(branch string, detached bool) bool {
 // Validate commit message.
 func (p BaseMessageProcessor) Validate(message string) error {
 	subject, body := splitCommitMessageContent(message)
-	msg, parseErr := p.Parse(subject, body)
 
+	msg, parseErr := p.Parse(subject, body)
 	if parseErr != nil {
 		return parseErr
 	}
