@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -98,7 +99,7 @@ func setupGitRepo(t *testing.T, tr testRepo) string {
 func runGitCommand(t *testing.T, args ...string) {
 	t.Helper()
 
-	cmd := exec.Command("git", args...)
+	cmd := exec.CommandContext(context.Background(), "git", args...)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -361,7 +362,7 @@ func TestCommit(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Verify the commit was created with the correct message
-				cmd := exec.Command("git", "log", "-1", "--pretty=%B")
+				cmd := exec.CommandContext(context.Background(), "git", "log", "-1", "--pretty=%B")
 				output, err := cmd.CombinedOutput()
 				assert.NoError(t, err)
 
@@ -698,14 +699,14 @@ func TestTag(t *testing.T) {
 			assert.Equal(t, tt.want, tag)
 
 			// Verify the tag was created
-			cmd := exec.Command("git", "tag", "-l", tag)
+			cmd := exec.CommandContext(context.Background(), "git", "tag", "-l", tag)
 			output, err := cmd.CombinedOutput()
 			assert.NoError(t, err)
 			assert.Contains(t, string(output), tag)
 
 			// If annotated, verify it's an annotated tag
 			if tt.annotate {
-				cmd := exec.Command("git", "tag", "-l", "-n", tag)
+				cmd := exec.CommandContext(context.Background(), "git", "tag", "-l", "-n", tag)
 				output, err := cmd.CombinedOutput()
 				assert.NoError(t, err)
 
@@ -717,7 +718,7 @@ func TestTag(t *testing.T) {
 
 			// If we tried to push, verify the tag was pushed to the remote
 			if !tt.local && tt.repo.setupRemote {
-				cmd := exec.Command("git", "ls-remote", "--tags", "origin", tag)
+				cmd := exec.CommandContext(context.Background(), "git", "ls-remote", "--tags", "origin", tag)
 				output, err := cmd.CombinedOutput()
 				assert.NoError(t, err)
 				assert.Contains(t, string(output), tag)
