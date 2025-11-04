@@ -7,10 +7,6 @@ Semantic versioning tool for git based on conventional commits.
 [![GitHub contributors](https://img.shields.io/github/contributors/thegeeklab/git-sv)](https://github.com/thegeeklab/git-sv/graphs/contributors)
 [![License: MIT](https://img.shields.io/github/license/thegeeklab/git-sv)](https://github.com/thegeeklab/git-sv/blob/main/LICENSE)
 
-## Requirements
-
-- Git 2.17+
-
 ## Installation
 
 Prebuilt multi-arch binaries are available for Linux and macOS.
