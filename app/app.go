@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -186,8 +187,11 @@ func (g GitSV) Log(lr LogRange) ([]sv.CommitLog, error) {
 			return nil
 		}
 
+		// Split the commit message into subject and body
+		subject, body := splitCommitMessage(c.Message)
+
 		// Parse the commit message
-		message, err := g.MessageProcessor.Parse(c.Message, "")
+		message, err := g.MessageProcessor.Parse(subject, body)
 		if err != nil {
 			return err
 		}
@@ -513,4 +517,13 @@ func getExcludeHashes(repo *git.Repository, lr LogRange) (map[plumbing.Hash]bool
 	}
 
 	return excludeHashes, nil
+}
+
+// splitCommitMessage separates a commit message into subject and body.
+// It returns the first line as subject and the rest (if any) as body.
+func splitCommitMessage(message string) (string, string) {
+	message = strings.TrimRight(message, "\n")
+	subject, body, _ := strings.Cut(message, "\n")
+
+	return strings.TrimSpace(subject), strings.TrimSpace(body)
 }
