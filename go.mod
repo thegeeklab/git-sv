@@ -9,7 +9,7 @@ require (
 	// Pin go-git to fix SSH knownhosts key mismatch regression bug
 	// xref: https://github.com/fluxcd/flux2/issues/5385
 	github.com/go-git/go-git/v5 v5.16.3-0.20250610123634-8ac015a75d81
-	github.com/goccy/go-yaml v1.19.1
+	github.com/goccy/go-yaml v1.19.2
 	github.com/manifoldco/promptui v0.9.0
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.11.1
