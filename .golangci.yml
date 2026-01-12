@@ -59,7 +59,6 @@ linters:
     - nolintlint
     - nonamedreturns
     - nosprintfhostport
-    - prealloc
     - predeclared
     - promlinter
     - reassign
@@ -92,7 +91,6 @@ linters:
       - linters:
           - gochecknoglobals
           - gosec
-          - prealloc
         path: (.+)_test.go
     paths:
       - third_party$
