@@ -22,7 +22,8 @@ linters:
     - errcheck
     - errchkjson
     - errname
-    - errorlint    - forcetypeassert
+    - errorlint
+    - forcetypeassert
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecknoglobals
