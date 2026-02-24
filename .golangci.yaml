@@ -1,3 +1,4 @@
+---
 version: "2"
 run:
   timeout: 5m
@@ -21,8 +22,7 @@ linters:
     - errcheck
     - errchkjson
     - errname
-    - errorlint
-    - forcetypeassert
+    - errorlint    - forcetypeassert
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecknoglobals
@@ -72,10 +72,22 @@ linters:
     - unparam
     - unused
     - usestdlibvars
+    - usetesting
     - whitespace
     - wsl_v5
     - zerologlint
   settings:
+    gosec:
+      excludes:
+        - G117 # Potential exposure of secrets via JSON marshaling
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - []
+            - []
+            - - skip-package-name-checks: true
+                skip-package-name-collision-with-go-std: true
     tagliatelle:
       case:
         rules:

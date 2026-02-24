@@ -271,7 +271,7 @@ func (p BaseMessageProcessor) Format(msg CommitMessage) (string, string, string)
 
 	var footer strings.Builder
 	if msg.BreakingMessage() != "" {
-		footer.WriteString(fmt.Sprintf("%s: %s", BreakingChangeFooterKey, msg.BreakingMessage()))
+		fmt.Fprintf(&footer, "%s: %s", BreakingChangeFooterKey, msg.BreakingMessage())
 	}
 
 	if issue, exists := msg.Metadata[IssueMetadataKey]; exists && p.messageCfg.IssueFooterConfig().Key != "" {
