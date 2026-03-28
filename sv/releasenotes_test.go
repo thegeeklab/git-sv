@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBaseReleaseNoteProcessor_Create(t *testing.T) {
+func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 	date := time.Now()
 
 	tests := []struct {

@@ -39,7 +39,7 @@ var fullChangeLog = `## v1.0.0 (2020-05-01)
 
 - break change message`
 
-func TestBaseOutputFormatter_FormatReleaseNote(t *testing.T) {
+func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 	date, _ := time.Parse("2006-01-02", "2020-05-01")
 
 	tests := []struct {
@@ -191,4 +191,38 @@ func changelogVariables(releases ...string) []releaseNoteTemplateVariables {
 	}
 
 	return variables
+}
+
+func TestOutputFormatterImpl_FormatChangelog(t *testing.T) {
+	date, _ := time.Parse("2006-01-02", "2020-05-01")
+
+	tests := []struct {
+		name    string
+		input   []sv.ReleaseNote
+		wantErr bool
+	}{
+		{
+			name: "multiple releases",
+			input: []sv.ReleaseNote{
+				fullReleaseNote("1.0.0", date.Truncate(time.Minute)),
+				emptyReleaseNote("0.1.0", date.Truncate(time.Minute)),
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewOutputFormatter(tmpls).FormatChangelog(tt.input)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotEmpty(t, got)
+		})
+	}
 }
