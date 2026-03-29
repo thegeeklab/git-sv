@@ -100,3 +100,10 @@ func Test_getSection(t *testing.T) {
 		})
 	}
 }
+
+func TestNew(t *testing.T) {
+	tpls := New(".gitsv")
+	assert.NotNil(t, tpls)
+	assert.NotNil(t, tpls.Lookup("changelog-md.tpl"))
+	assert.NotNil(t, tpls.Lookup("releasenotes-md.tpl"))
+}

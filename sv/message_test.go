@@ -116,7 +116,7 @@ BREAKING CHANGE: refactor to use JavaScript features not available in Node 6.`
 
 // multiline samples end
 
-func TestBaseMessageProcessor_SkipBranch(t *testing.T) {
+func TestMessageProcessorImpl_SkipBranch(t *testing.T) {
 	tests := []struct {
 		name     string
 		bcfg     BranchesConfig
@@ -171,7 +171,7 @@ func TestBaseMessageProcessor_SkipBranch(t *testing.T) {
 	}
 }
 
-func TestBaseMessageProcessor_Validate(t *testing.T) {
+func TestMessageProcessorImpl_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -258,7 +258,7 @@ func TestBaseMessageProcessor_Validate(t *testing.T) {
 	}
 }
 
-func TestBaseMessageProcessor_ValidateType(t *testing.T) {
+func TestMessageProcessorImpl_ValidateType(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -301,7 +301,7 @@ func TestBaseMessageProcessor_ValidateType(t *testing.T) {
 	}
 }
 
-func TestBaseMessageProcessor_ValidateScope(t *testing.T) {
+func TestMessageProcessorImpl_ValidateScope(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -344,7 +344,7 @@ func TestBaseMessageProcessor_ValidateScope(t *testing.T) {
 	}
 }
 
-func TestBaseMessageProcessor_ValidateDescription(t *testing.T) {
+func TestMessageProcessorImpl_ValidateDescription(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         CommitMessageConfig
@@ -399,7 +399,7 @@ func TestBaseMessageProcessor_ValidateDescription(t *testing.T) {
 	}
 }
 
-func TestBaseMessageProcessor_Enhance(t *testing.T) {
+func TestMessageProcessorImpl_Enhance(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -522,7 +522,7 @@ func TestBaseMessageProcessor_Enhance(t *testing.T) {
 	}
 }
 
-func TestBaseMessageProcessor_IssueID(t *testing.T) {
+func TestMessageProcessorImpl_IssueID(t *testing.T) {
 	p := NewMessageProcessor(ccfg, newBranchCfg(false))
 
 	tests := []struct {
@@ -728,7 +728,7 @@ var hashMetadataBody = `some descriptions
 Jira: JIRA-999
 Refs #123`
 
-func TestBaseMessageProcessor_Parse(t *testing.T) {
+func TestMessageProcessorImpl_Parse(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     CommitMessageConfig
@@ -893,7 +893,7 @@ func TestBaseMessageProcessor_Parse(t *testing.T) {
 	}
 }
 
-func TestBaseMessageProcessor_Format(t *testing.T) {
+func TestMessageProcessorImpl_Format(t *testing.T) {
 	tests := []struct {
 		name       string
 		cfg        CommitMessageConfig
