@@ -127,7 +127,7 @@ func promptBreakingChanges() (string, error) {
 	return promptText("Breaking change description", "[a-z].+", "")
 }
 
-func promptSelect(label string, items interface{}, template *promptui.SelectTemplates) (int, error) {
+func promptSelect(label string, items any, template *promptui.SelectTemplates) (int, error) {
 	if items == nil || reflect.TypeOf(items).Kind() != reflect.Slice {
 		return 0, fmt.Errorf("%w: %v is not a slice", errInvalidValue, items)
 	}

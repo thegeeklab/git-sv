@@ -135,7 +135,7 @@ func Test_checkTemplatesExecution(t *testing.T) {
 	tests := []struct {
 		name      string
 		template  string
-		variables interface{}
+		variables any
 	}{
 		{
 			name:      "changelog-md.tpl",

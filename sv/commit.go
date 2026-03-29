@@ -17,7 +17,7 @@ type CommitLog struct {
 	Timestamp  int           `json:"timestamp,omitempty"`
 	AuthorName string        `json:"authorName,omitempty"`
 	Hash       string        `json:"hash,omitempty"`
-	Message    CommitMessage `json:"message,omitempty"`
+	Message    CommitMessage `json:"message,omitzero"`
 }
 
 // IsValidVersion return true when a version is valid.

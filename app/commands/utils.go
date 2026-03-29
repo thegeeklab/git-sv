@@ -41,7 +41,7 @@ func getTags(gsv app.GitSV, tag string) (string, app.Tag, error) {
 }
 
 func find(tag string, tags []app.Tag) int {
-	for i := 0; i < len(tags); i++ {
+	for i := range tags {
 		if tag == tags[i].Name {
 			return i
 		}

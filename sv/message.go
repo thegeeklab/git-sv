@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -20,6 +21,9 @@ var (
 	errIssueIDNotFound      = errors.New("could not find issue id using configured regex")
 	errInvalidIssueRegex    = errors.New("could not compile issue regex")
 	errInvalidHeaderRegex   = errors.New("invalid regex on header-selector")
+
+	footerColonRe = regexp.MustCompile(`^[a-zA-Z-]+: `)
+	footerHashRe  = regexp.MustCompile(`^[a-zA-Z-]+ #`)
 )
 
 // CommitMessage is a message using conventional commits.
@@ -306,7 +310,14 @@ func (p MessageProcessorImpl) Parse(subject, body string) (CommitMessage, error)
 		if mdCfg.Key != "" {
 			prefixes := append([]string{mdCfg.Key}, mdCfg.KeySynonyms...)
 			for _, prefix := range prefixes {
-				if tagValue := extractFooterMetadata(prefix, m.Body, mdCfg.UseHash); tagValue != "" {
+				var prefixPattern string
+				if mdCfg.UseHash {
+					prefixPattern = prefix + " #"
+				} else {
+					prefixPattern = prefix + ": "
+				}
+
+				if tagValue := extractFooterMetadata(prefixPattern, m.Body); tagValue != "" {
 					m.Metadata[key] = tagValue
 
 					break
@@ -319,7 +330,7 @@ func (p MessageProcessorImpl) Parse(subject, body string) (CommitMessage, error)
 		m.Metadata[BreakingChangeMetadataKey] = m.Description
 	}
 
-	if tagValue := extractFooterMetadata(BreakingChangeFooterKey, m.Body, false); tagValue != "" {
+	if tagValue := extractFooterMetadata(BreakingChangeFooterKey+": ", m.Body); tagValue != "" {
 		m.IsBreakingChange = true
 		m.Metadata[BreakingChangeMetadataKey] = tagValue
 	}
@@ -367,19 +378,51 @@ func parseSubjectMessage(message string) (string, string, string, bool) {
 	return result[1], result[3], strings.TrimSpace(result[5]), result[4] == "!"
 }
 
-func extractFooterMetadata(key, text string, useHash bool) string {
-	regex := regexp.MustCompile(key + ": (.*)")
+func extractFooterMetadata(key, text string) string {
+	var value string
 
-	if useHash {
-		regex = regexp.MustCompile(key + " (#.*)")
+	scanner := bufio.NewScanner(strings.NewReader(text))
+
+	inFooterValue := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if after, ok := strings.CutPrefix(line, key); ok {
+			if strings.HasSuffix(key, " #") {
+				value = "#" + after
+			} else {
+				value = after
+			}
+
+			inFooterValue = true
+
+			continue
+		}
+
+		if inFooterValue {
+			// Check if this line is another footer
+			// Standard footer pattern: "Key: value"
+			if footerColonRe.MatchString(line) {
+				break
+			}
+
+			// Hash footer pattern: "Key #value" - e.g., "Refs #123"
+			if footerHashRe.MatchString(line) {
+				break
+			}
+
+			// Check for BREAKING CHANGE footer which has space in key name
+			if strings.HasPrefix(line, BreakingChangeFooterKey+": ") {
+				break
+			}
+
+			// Continuation of previous footer value
+			value += "\n" + line
+		}
 	}
 
-	result := regex.FindStringSubmatch(text)
-	if len(result) < 2 { //nolint:mnd
-		return ""
-	}
-
-	return result[1]
+	return value
 }
 
 func hasFooter(message string) bool {
@@ -411,13 +454,7 @@ func hasIssueID(message string, issueConfig CommitMessageFooterConfig) bool {
 }
 
 func contains(value string, content []string) bool {
-	for _, v := range content {
-		if value == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(content, value)
 }
 
 func splitCommitMessageContent(content string) (string, string) {
