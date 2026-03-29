@@ -62,7 +62,7 @@ func setupGitRepo(t *testing.T, tr testRepo) string {
 
 		testFile := filepath.Join(tmpDir, fmt.Sprintf("file%d.txt", i))
 
-		err := os.WriteFile(testFile, []byte(fmt.Sprintf("content %d", i)), 0o644)
+		err := os.WriteFile(testFile, fmt.Appendf(nil, "content %d", i), 0o644)
 		if err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}

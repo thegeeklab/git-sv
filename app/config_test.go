@@ -53,23 +53,23 @@ func Test_merge(t *testing.T) {
 
 		{
 			name:    "overwrite pointer bool false",
-			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(false)}},
-			src:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
-			want:    Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
+			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: new(false)}},
+			src:     Config{Branches: sv.BranchesConfig{SkipDetached: new(true)}},
+			want:    Config{Branches: sv.BranchesConfig{SkipDetached: new(true)}},
 			wantErr: false,
 		},
 		{
 			name:    "overwrite pointer bool true",
-			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
-			src:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(false)}},
-			want:    Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(false)}},
+			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: new(true)}},
+			src:     Config{Branches: sv.BranchesConfig{SkipDetached: new(false)}},
+			want:    Config{Branches: sv.BranchesConfig{SkipDetached: new(false)}},
 			wantErr: false,
 		},
 		{
 			name:    "default pointer bool",
-			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
+			dst:     Config{Branches: sv.BranchesConfig{SkipDetached: new(true)}},
 			src:     Config{Branches: sv.BranchesConfig{SkipDetached: nil}},
-			want:    Config{Branches: sv.BranchesConfig{SkipDetached: toPtr(true)}},
+			want:    Config{Branches: sv.BranchesConfig{SkipDetached: new(true)}},
 			wantErr: false,
 		},
 		{
@@ -117,22 +117,22 @@ func Test_merge(t *testing.T) {
 			dst: Config{
 				LogLevel: "info",
 				Tag: TagConfig{
-					Pattern: toPtr("something"),
-					Filter:  toPtr("something"),
+					Pattern: new("something"),
+					Filter:  new("something"),
 				},
 			},
 			src: Config{
 				LogLevel: "",
 				Tag: TagConfig{
-					Pattern: toPtr(""),
-					Filter:  toPtr(""),
+					Pattern: new(""),
+					Filter:  new(""),
 				},
 			},
 			want: Config{
 				LogLevel: "info",
 				Tag: TagConfig{
-					Pattern: toPtr(""),
-					Filter:  toPtr(""),
+					Pattern: new(""),
+					Filter:  new(""),
 				},
 			},
 			wantErr: false,
@@ -153,9 +153,4 @@ func Test_merge(t *testing.T) {
 			assert.Equal(t, tt.want, tt.dst)
 		})
 	}
-}
-
-// Helper function to create a pointer to any type.
-func toPtr[T any](v T) *T {
-	return &v
 }

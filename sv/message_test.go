@@ -728,6 +728,12 @@ var hashMetadataBody = `some descriptions
 Jira: JIRA-999
 Refs #123`
 
+var multilineBreakingChangeBody = `some descriptions
+
+BREAKING CHANGE: Replace the custom logger and ` + "`" + `python-json-logger` + "`" + ` with
+` + "`" + `structlog` + "`" + `. This will also change the layout and general structure of
+the log messages.`
+
 func TestMessageProcessorImpl_Parse(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -879,6 +885,25 @@ func TestMessageProcessorImpl_Parse(t *testing.T) {
 				Body:             expectedBodyWithCarriage,
 				IsBreakingChange: false,
 				Metadata:         map[string]string{IssueMetadataKey: "JIRA-123"},
+			},
+		},
+		{
+			// Multiline breaking change notes should capture the full content
+			// across multiple lines, not just the first line.
+			name:    "multiline breaking change body",
+			cfg:     ccfg,
+			subject: "refactor: replace logger by structlog",
+			body:    multilineBreakingChangeBody,
+			want: CommitMessage{
+				Type:             "refactor",
+				Scope:            "",
+				Description:      "replace logger by structlog",
+				Body:             multilineBreakingChangeBody,
+				IsBreakingChange: true,
+				Metadata: map[string]string{
+					BreakingChangeMetadataKey: "Replace the custom logger and `python-json-logger` with\n" +
+						"`structlog`. This will also change the layout and general structure of\nthe log messages.",
+				},
 			},
 		},
 	}
