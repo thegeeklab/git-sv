@@ -52,6 +52,7 @@ type CommitLogSettings struct {
 type TagSettings struct {
 	Annotate bool
 	Local    bool
+	Force    bool
 }
 
 // Config cli yaml config.

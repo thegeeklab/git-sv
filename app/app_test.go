@@ -606,6 +606,7 @@ func TestTag(t *testing.T) {
 		version   string
 		annotate  bool
 		local     bool
+		force     bool
 		repo      testRepo
 		setupFunc func()
 		want      string
@@ -616,6 +617,7 @@ func TestTag(t *testing.T) {
 			version:  "1.0.0",
 			annotate: false,
 			local:    true,
+			force:    false,
 			repo:     testRepo{commits: 1},
 			want:     "1.0.0",
 			wantErr:  false,
@@ -625,6 +627,7 @@ func TestTag(t *testing.T) {
 			version:  "2.1.0",
 			annotate: true,
 			local:    true,
+			force:    false,
 			repo:     testRepo{commits: 1},
 			want:     "2.1.0",
 			wantErr:  false,
@@ -634,6 +637,7 @@ func TestTag(t *testing.T) {
 			version:  "1.0.0",
 			annotate: false,
 			local:    true,
+			force:    false,
 			repo:     testRepo{commits: 1},
 			setupFunc: func() {
 				// Create a tag that will conflict
@@ -643,10 +647,24 @@ func TestTag(t *testing.T) {
 			wantErr: true, // Should fail because tag already exists
 		},
 		{
+			name:     "tag already exists with force",
+			version:  "1.0.0",
+			annotate: false,
+			local:    true,
+			force:    true,
+			repo:     testRepo{commits: 2},
+			setupFunc: func() {
+				runGitCommand(t, "tag", "1.0.0", "HEAD~1")
+			},
+			want:    "1.0.0",
+			wantErr: false,
+		},
+		{
 			name:     "push to remote",
 			version:  "1.0.0",
 			annotate: false,
 			local:    false, // Try to push
+			force:    false,
 			repo:     testRepo{commits: 1, setupRemote: true},
 			want:     "1.0.0",
 			wantErr:  false, // Should succeed because we set up a remote
@@ -656,6 +674,7 @@ func TestTag(t *testing.T) {
 			version:  "1.0.0",
 			annotate: false,
 			local:    false, // Try to push
+			force:    false,
 			repo:     testRepo{commits: 1},
 			want:     "1.0.0",
 			wantErr:  true, // Should fail because there's no remote
@@ -686,7 +705,7 @@ func TestTag(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Call the Tag function
-			tag, err := g.Tag(*semverVersion, tt.annotate, tt.local)
+			tag, err := g.Tag(*semverVersion, tt.annotate, tt.local, tt.force)
 
 			// Check error
 			if tt.wantErr {
@@ -722,6 +741,16 @@ func TestTag(t *testing.T) {
 				output, err := cmd.CombinedOutput()
 				assert.NoError(t, err)
 				assert.Contains(t, string(output), tag)
+			}
+
+			if tt.force {
+				localTagHash, err := exec.CommandContext(context.Background(), "git", "rev-list", "-n", "1", tag).CombinedOutput()
+				assert.NoError(t, err)
+
+				headHash, err := exec.CommandContext(context.Background(), "git", "rev-parse", "HEAD").CombinedOutput()
+				assert.NoError(t, err)
+
+				assert.Equal(t, strings.TrimSpace(string(headHash)), strings.TrimSpace(string(localTagHash)))
 			}
 		})
 	}

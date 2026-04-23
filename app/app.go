@@ -254,7 +254,7 @@ func (g GitSV) Commit(header, body, footer string) error {
 }
 
 // Tag create a git tag.
-func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error) {
+func (g GitSV) Tag(version semver.Version, annotate, local, force bool) (string, error) {
 	tag := fmt.Sprintf(*g.Config.Tag.Pattern, version.Major(), version.Minor(), version.Patch())
 	tagMsg := fmt.Sprintf("Version %d.%d.%d", version.Major(), version.Minor(), version.Patch())
 
@@ -266,6 +266,13 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 	head, err := repo.Head()
 	if err != nil {
 		return tag, fmt.Errorf("failed to get HEAD reference: %w", err)
+	}
+
+	if force {
+		err = repo.DeleteTag(tag)
+		if err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
+			return tag, fmt.Errorf("failed to replace existing tag: %w", err)
+		}
 	}
 
 	var tagOpts *git.CreateTagOptions
@@ -290,10 +297,16 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 		return tag, fmt.Errorf("failed to get remote: %w", err)
 	}
 
-	refSpec := fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag)
+	refSpecPrefix := ""
+	if force {
+		refSpecPrefix = "+"
+	}
+
+	refSpec := fmt.Sprintf("%srefs/tags/%s:refs/tags/%s", refSpecPrefix, tag, tag)
 
 	err = remote.Push(&git.PushOptions{
 		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
+		Force:    force,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return tag, fmt.Errorf("failed to push tag: %w", err)
