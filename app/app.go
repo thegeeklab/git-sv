@@ -297,15 +297,11 @@ func (g GitSV) Tag(version semver.Version, annotate, local, force bool) (string,
 		return tag, fmt.Errorf("failed to get remote: %w", err)
 	}
 
-	refSpecPrefix := ""
-	if force {
-		refSpecPrefix = "+"
-	}
-
-	refSpec := fmt.Sprintf("%srefs/tags/%s:refs/tags/%s", refSpecPrefix, tag, tag)
+	refSpec := fmt.Sprintf("refs/tags/%s:refs/tags/%s", tag, tag)
 
 	err = remote.Push(&git.PushOptions{
 		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
+		Force:    force,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return tag, fmt.Errorf("failed to push tag: %w", err)
