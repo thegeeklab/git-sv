@@ -7,6 +7,11 @@ import (
 	"github.com/thegeeklab/git-sv/app"
 )
 
+func TestTagFlags(t *testing.T) {
+	flags := TagFlags(&app.TagSettings{})
+	assert.NotEmpty(t, flags)
+}
+
 func TestTagHandler(t *testing.T) {
 	gsv := app.New()
 	settings := &app.TagSettings{}
