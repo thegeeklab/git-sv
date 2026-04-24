@@ -747,7 +747,7 @@ func TestTag(t *testing.T) {
 				tagSHA, err := exec.CommandContext(t.Context(), "git", "rev-list", "-n", "1", tag).CombinedOutput()
 				assert.NoError(t, err)
 
-				headHash, err := exec.CommandContext(context.Background(), "git", "rev-parse", "HEAD").CombinedOutput()
+				headSHA, err := exec.CommandContext(t.Context(), "git", "rev-parse", "HEAD").CombinedOutput()
 				assert.NoError(t, err)
 
 				assert.Equal(t, strings.TrimSpace(string(headSHA)), strings.TrimSpace(string(tagSHA)))
