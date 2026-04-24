@@ -306,7 +306,6 @@ func (g GitSV) Tag(version semver.Version, annotate, local, force bool) (string,
 
 	err = remote.Push(&git.PushOptions{
 		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
-		Force:    force,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return tag, fmt.Errorf("failed to push tag: %w", err)
