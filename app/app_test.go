@@ -744,7 +744,7 @@ func TestTag(t *testing.T) {
 			}
 
 			if tt.force {
-				localTagHash, err := exec.CommandContext(context.Background(), "git", "rev-list", "-n", "1", tag).CombinedOutput()
+				tagSHA, err := exec.CommandContext(t.Context(), "git", "rev-list", "-n", "1", tag).CombinedOutput()
 				assert.NoError(t, err)
 
 				headHash, err := exec.CommandContext(context.Background(), "git", "rev-parse", "HEAD").CombinedOutput()
