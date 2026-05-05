@@ -105,7 +105,8 @@ linters:
       - linters:
           - gochecknoglobals
           - gosec
-        path: (.+)_test.go
+          - goconst
+        path: _test\.go
     paths:
       - third_party$
       - builtin$
