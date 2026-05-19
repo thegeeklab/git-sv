@@ -164,7 +164,7 @@ func (t *mergeTransformer) Transformer(typ reflect.Type) func(dst, src reflect.V
 		}
 	}
 
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		return func(dst, src reflect.Value) error {
 			if dst.CanSet() && !src.IsNil() {
 				dst.Set(src)
