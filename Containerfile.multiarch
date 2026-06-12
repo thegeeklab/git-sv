@@ -18,7 +18,7 @@ LABEL org.opencontainers.image.source="https://github.com/thegeeklab/git-sv"
 LABEL org.opencontainers.image.documentation="https://github.com/thegeeklab/git-sv"
 
 RUN apk --update add --no-cache git && \
-    apk upgrade --no-cache zlib && \
+    apk upgrade --no-cache zlib libcrypto3 && \
     rm -rf /var/cache/apk/* && \
     rm -rf /tmp/*
 
