@@ -121,6 +121,13 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 				Flags:   commands.TagFlags(&gsv.Settings.TagSettings),
 			},
 			{
+				Name:    "retag",
+				Aliases: []string{"rt"},
+				Usage:   "move the most recent (or a specific) tag to HEAD and force-push it",
+				Action:  commands.RetagHandler(gsv, &gsv.Settings.RetagSettings),
+				Flags:   commands.RetagFlags(&gsv.Settings.RetagSettings),
+			},
+			{
 				Name:    "commit",
 				Aliases: []string{"cmt"},
 				Usage:   "execute git commit with conventional commit message helper",
