@@ -23,12 +23,6 @@ func TagFlags(settings *app.TagSettings) []cli.Flag {
 			Usage:       "create local tag only",
 			Destination: &settings.Local,
 		},
-		&cli.BoolFlag{
-			Name:        "force",
-			Aliases:     []string{"f"},
-			Usage:       "replace tag if it already exists",
-			Destination: &settings.Force,
-		},
 	}
 }
 
@@ -53,7 +47,7 @@ func TagHandler(g app.GitSV, settings *app.TagSettings) cli.ActionFunc {
 			return nil
 		}
 
-		tagname, err := g.Tag(*nextVer, settings.Annotate, settings.Local, settings.Force)
+		tagname, err := g.Tag(*nextVer, settings.Annotate, settings.Local, false)
 		if err != nil {
 			return fmt.Errorf("error generating tag version: %s: %w", nextVer.String(), err)
 		}
