@@ -20,6 +20,7 @@ type Settings struct {
 	CommitNotesSettings  CommitNotesSettings
 	CommitLogSettings    CommitLogSettings
 	TagSettings          TagSettings
+	RetagSettings        RetagSettings
 }
 
 type ChangelogSettings struct {
@@ -53,6 +54,12 @@ type TagSettings struct {
 	Annotate bool
 	Local    bool
 	Force    bool
+}
+
+type RetagSettings struct {
+	Annotate bool
+	Local    bool
+	Tag      string
 }
 
 // Config cli yaml config.
