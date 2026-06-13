@@ -21,6 +21,7 @@ import (
 var (
 	ErrNoDataFound        = errors.New("no data found in repository")
 	ErrCommitMessageEmpty = errors.New("commit message is empty")
+	ErrNoExistingTag      = errors.New("no existing tag to recreate")
 )
 
 // Tag git tag info.
@@ -269,8 +270,7 @@ func (g GitSV) Tag(version semver.Version, annotate, local, force bool) (string,
 	}
 
 	if force {
-		err = repo.DeleteTag(tag)
-		if err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
+		if err := repo.DeleteTag(tag); err != nil && !errors.Is(err, plumbing.ErrReferenceNotFound) {
 			return tag, fmt.Errorf("failed to replace existing tag: %w", err)
 		}
 	}

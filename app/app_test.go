@@ -25,10 +25,8 @@ type testRepo struct {
 func setupGitRepo(t *testing.T, tr testRepo) string {
 	t.Helper()
 
-	// Create a temporary directory using t.TempDir() which is automatically cleaned up
 	tmpDir := t.TempDir()
-
-	// Change to the temporary directory
+	t.Setenv("HOME", tmpDir)
 	t.Chdir(tmpDir)
 	// Initialize git repository
 	runGitCommand(t, "init", "-b", "main")

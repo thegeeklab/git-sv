@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/rs/zerolog/log"
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
@@ -26,7 +27,7 @@ func TagFlags(settings *app.TagSettings) []cli.Flag {
 		&cli.BoolFlag{
 			Name:        "force",
 			Aliases:     []string{"f"},
-			Usage:       "replace tag if it already exists",
+			Usage:       "recreate the current tag if it already exists",
 			Destination: &settings.Force,
 		},
 	}
@@ -41,6 +42,14 @@ func TagHandler(g app.GitSV, settings *app.TagSettings) cli.ActionFunc {
 			return fmt.Errorf("error parsing version: %s from git tag: %w", lastTag, err)
 		}
 
+		if settings.Force {
+			if lastTag == "" {
+				return app.ErrNoExistingTag
+			}
+
+			return createAndPrintTag(g, *currentVer, settings)
+		}
+
 		commits, err := g.Log(app.NewLogRange(app.TagRange, lastTag, ""))
 		if err != nil {
 			return fmt.Errorf("error getting git log: %w", err)
@@ -53,13 +62,17 @@ func TagHandler(g app.GitSV, settings *app.TagSettings) cli.ActionFunc {
 			return nil
 		}
 
-		tagname, err := g.Tag(*nextVer, settings.Annotate, settings.Local, settings.Force)
-		if err != nil {
-			return fmt.Errorf("error generating tag version: %s: %w", nextVer.String(), err)
-		}
-
-		fmt.Println(tagname)
-
-		return nil
+		return createAndPrintTag(g, *nextVer, settings)
 	}
+}
+
+func createAndPrintTag(g app.GitSV, version semver.Version, settings *app.TagSettings) error {
+	tagname, err := g.Tag(version, settings.Annotate, settings.Local, settings.Force)
+	if err != nil {
+		return fmt.Errorf("error generating tag version: %s: %w", version.String(), err)
+	}
+
+	fmt.Println(tagname)
+
+	return nil
 }
