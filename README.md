@@ -168,6 +168,7 @@ COMMANDS:
    release-notes, rn             generate release notes
    changelog, cgl                generate changelog
    tag, tg                       generate tag with version based on git commit messages
+   retag, rt                     move the most recent (or a specific) tag to HEAD and force-push it
    commit, cmt                   execute git commit with conventional commit message helper
    validate-commit-message, vcm  use as prepare-commit-message hook to validate and enhance commit message
    help, h                       Shows a list of commands or help for one command
