@@ -3,7 +3,6 @@
 Semantic versioning tool for git based on conventional commits.
 
 [![Build Status](https://ci.thegeeklab.de/api/badges/thegeeklab/git-sv/status.svg)](https://ci.thegeeklab.de/repos/thegeeklab/git-sv)
-[![Go Report Card](https://goreportcard.com/badge/github.com/thegeeklab/git-sv)](https://goreportcard.com/report/github.com/thegeeklab/git-sv)
 [![GitHub contributors](https://img.shields.io/github/contributors/thegeeklab/git-sv)](https://github.com/thegeeklab/git-sv/graphs/contributors)
 [![License: MIT](https://img.shields.io/github/license/thegeeklab/git-sv)](https://github.com/thegeeklab/git-sv/blob/main/LICENSE)
 
