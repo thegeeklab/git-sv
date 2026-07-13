@@ -4,20 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/thegeeklab/git-sv/app"
 	"github.com/thegeeklab/git-sv/sv"
 	"github.com/urfave/cli/v3"
 )
 
-var errNoTagToRetag = errors.New("no tag found to retag")
+var (
+	errNoTagToRetag = errors.New("no tag found to retag")
+	errTagNotFound  = errors.New("tag not found")
+)
 
 func RetagFlags(settings *app.RetagSettings) []cli.Flag {
 	return []cli.Flag{
 		&cli.BoolFlag{
 			Name:        "annotate",
 			Aliases:     []string{"a"},
-			Usage:       "make an annotated tag object",
+			Usage:       "force an annotated tag object (annotated source tags are preserved regardless)",
 			Destination: &settings.Annotate,
 		},
 		&cli.BoolFlag{
@@ -28,7 +32,7 @@ func RetagFlags(settings *app.RetagSettings) []cli.Flag {
 		&cli.StringFlag{
 			Name:        "tag",
 			Aliases:     []string{"t"},
-			Usage:       "retag a specific tag instead of the most recent one",
+			Usage:       "retag a specific existing tag instead of the most recently created one",
 			Destination: &settings.Tag,
 		},
 	}
@@ -36,21 +40,40 @@ func RetagFlags(settings *app.RetagSettings) []cli.Flag {
 
 func RetagHandler(g app.GitSV, settings *app.RetagSettings) cli.ActionFunc {
 	return func(_ context.Context, _ *cli.Command) error {
-		target := settings.Tag
-		if target == "" {
-			target = g.LastTag()
-		}
-
-		if target == "" {
-			return errNoTagToRetag
-		}
-
-		version, err := sv.ToVersion(target)
+		tags, err := g.Tags()
 		if err != nil {
-			return fmt.Errorf("error parsing version: %s from git tag: %w", target, err)
+			return fmt.Errorf("error listing tags: %w", err)
 		}
 
-		tagname, err := g.Tag(*version, settings.Annotate, settings.Local, true)
+		var target app.Tag
+
+		if settings.Tag != "" {
+			idx := slices.IndexFunc(tags, func(t app.Tag) bool { return t.Name == settings.Tag })
+			if idx < 0 {
+				return fmt.Errorf("%w: %s", errTagNotFound, settings.Tag)
+			}
+
+			target = tags[idx]
+		} else {
+			if len(tags) == 0 {
+				return errNoTagToRetag
+			}
+
+			// Tags() is sorted by date (oldest first), so the most recently
+			// created tag is the last entry.
+			target = tags[len(tags)-1]
+		}
+
+		version, err := sv.ToVersion(target.Name)
+		if err != nil {
+			return fmt.Errorf("error parsing version: %s from git tag: %w", target.Name, err)
+		}
+
+		// Preserve the original tag type: never silently downgrade an annotated
+		// tag to a lightweight one.
+		annotate := settings.Annotate || target.Annotated
+
+		tagname, err := g.Tag(*version, annotate, settings.Local, true)
 		if err != nil {
 			return fmt.Errorf("error retagging version: %s: %w", version.String(), err)
 		}
