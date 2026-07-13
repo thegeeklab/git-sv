@@ -25,8 +25,9 @@ var (
 
 // Tag git tag info.
 type Tag struct {
-	Name string
-	Date time.Time
+	Name      string
+	Date      time.Time
+	Annotated bool
 }
 
 // LogRangeType type of log range.
@@ -336,7 +337,9 @@ func (g GitSV) Tags() ([]Tag, error) {
 
 		// Try to get annotated tag first
 		tagObj, err := repo.TagObject(ref.Hash())
-		if err == nil {
+
+		annotated := err == nil
+		if annotated {
 			tagDate = tagObj.Tagger.When
 		} else {
 			// For lightweight tags, get the commit
@@ -348,8 +351,9 @@ func (g GitSV) Tags() ([]Tag, error) {
 		}
 
 		tags = append(tags, Tag{
-			Name: tagName,
-			Date: tagDate,
+			Name:      tagName,
+			Date:      tagDate,
+			Annotated: annotated,
 		})
 
 		return nil

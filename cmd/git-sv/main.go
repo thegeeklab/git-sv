@@ -123,7 +123,7 @@ When flag range is "date", if "end" is YYYY-MM-DD the range will be inclusive.`,
 			{
 				Name:    "retag",
 				Aliases: []string{"rt"},
-				Usage:   "move the most recent (or a specific) tag to HEAD and force-push it",
+				Usage:   "move the most recently created (or a specific) tag to HEAD and force-push it",
 				Action:  commands.RetagHandler(gsv, &gsv.Settings.RetagSettings),
 				Flags:   commands.RetagFlags(&gsv.Settings.RetagSettings),
 			},
