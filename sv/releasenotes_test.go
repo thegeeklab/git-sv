@@ -114,7 +114,8 @@ func TestReleaseNoteProcessorImpl_Create(t *testing.T) {
 						{Name: "Tag 2", SectionType: "commits", CommitTypes: []string{"t2"}},
 						{Name: "Breaking Changes", SectionType: "breaking-changes"},
 					},
-				})
+				},
+			)
 			got := p.Create(tt.version, tt.tag, tt.date, tt.commits)
 
 			assert.Equal(t, tt.want, got)

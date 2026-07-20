@@ -64,8 +64,7 @@ func RetagHandler(g app.GitSV, settings *app.RetagSettings) cli.ActionFunc {
 			target = tags[len(tags)-1]
 		}
 
-		version, err := sv.ToVersion(target.Name)
-		if err != nil {
+		if _, err := sv.ToVersion(target.Name); err != nil {
 			return fmt.Errorf("error parsing version: %s from git tag: %w", target.Name, err)
 		}
 
@@ -73,9 +72,9 @@ func RetagHandler(g app.GitSV, settings *app.RetagSettings) cli.ActionFunc {
 		// tag to a lightweight one.
 		annotate := settings.Annotate || target.Annotated
 
-		tagname, err := g.Tag(*version, annotate, settings.Local, true)
+		tagname, err := g.Retag(target.Name, annotate, settings.Local)
 		if err != nil {
-			return fmt.Errorf("error retagging version: %s: %w", version.String(), err)
+			return fmt.Errorf("error retagging %s: %w", target.Name, err)
 		}
 
 		fmt.Println(tagname)

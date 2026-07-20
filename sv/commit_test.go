@@ -115,7 +115,8 @@ func TestSemVerCommitProcessor_NextVersion(t *testing.T) {
 					UpdatePatch:   []string{"patch"},
 					IgnoreUnknown: tt.ignoreUnknown,
 				},
-				CommitMessageConfig{Types: []string{"major", "minor", "patch", "none"}})
+				CommitMessageConfig{Types: []string{"major", "minor", "patch", "none"}},
+			)
 			got, gotUpdated := p.NextVersion(tt.version, tt.commits)
 
 			assert.Equal(t, tt.want, got)

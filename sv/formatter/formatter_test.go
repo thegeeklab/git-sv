@@ -166,15 +166,18 @@ func releaseNotesVariables(release string) releaseNoteTemplateVariables {
 		Release: release,
 		Date:    time.Date(2006, 1, 0o2, 0, 0, 0, 0, time.UTC),
 		Sections: []sv.ReleaseNoteSection{
-			sv.TestNewReleaseNoteCommitsSection("Features",
+			sv.TestNewReleaseNoteCommitsSection(
+				"Features",
 				[]string{"feat"},
 				[]sv.CommitLog{sv.TestCommitlog("feat", map[string]string{}, "a")},
 			),
-			sv.TestNewReleaseNoteCommitsSection("Bug Fixes",
+			sv.TestNewReleaseNoteCommitsSection(
+				"Bug Fixes",
 				[]string{"fix"},
 				[]sv.CommitLog{sv.TestCommitlog("fix", map[string]string{}, "a")},
 			),
-			sv.TestNewReleaseNoteCommitsSection("Build",
+			sv.TestNewReleaseNoteCommitsSection(
+				"Build",
 				[]string{"build"},
 				[]sv.CommitLog{sv.TestCommitlog("build", map[string]string{}, "a")},
 			),
