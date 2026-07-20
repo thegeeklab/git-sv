@@ -25,8 +25,9 @@ var (
 
 // Tag git tag info.
 type Tag struct {
-	Name string
-	Date time.Time
+	Name      string
+	Date      time.Time
+	Annotated bool
 }
 
 // LogRangeType type of log range.
@@ -270,7 +271,6 @@ func (g GitSV) Tag(version semver.Version, annotate, local bool) (string, error)
 
 	var tagOpts *git.CreateTagOptions
 	if annotate {
-		// Create an annotated tag with a message
 		tagOpts = &git.CreateTagOptions{
 			Message: tagMsg,
 		}
@@ -336,7 +336,9 @@ func (g GitSV) Tags() ([]Tag, error) {
 
 		// Try to get annotated tag first
 		tagObj, err := repo.TagObject(ref.Hash())
-		if err == nil {
+
+		annotated := err == nil
+		if annotated {
 			tagDate = tagObj.Tagger.When
 		} else {
 			// For lightweight tags, get the commit
@@ -348,8 +350,9 @@ func (g GitSV) Tags() ([]Tag, error) {
 		}
 
 		tags = append(tags, Tag{
-			Name: tagName,
-			Date: tagDate,
+			Name:      tagName,
+			Date:      tagDate,
+			Annotated: annotated,
 		})
 
 		return nil
@@ -364,6 +367,83 @@ func (g GitSV) Tags() ([]Tag, error) {
 	})
 
 	return tags, nil
+}
+
+// Retag moves the existing tag with the given name to HEAD. The exact name
+// is preserved (no pattern reformatting). If the tag already points to HEAD
+// and no annotation upgrade is required, the local rewrite is skipped.
+func (g GitSV) Retag(existingName string, annotate, local bool) (string, error) {
+	repo, err := git.PlainOpen(".")
+	if err != nil {
+		return existingName, fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	head, err := repo.Head()
+	if err != nil {
+		return existingName, fmt.Errorf("failed to get HEAD reference: %w", err)
+	}
+
+	tagCommit, existingAnnotated, err := resolveTagCommit(repo, existingName)
+	if err != nil {
+		return existingName, fmt.Errorf("failed to resolve tag %q: %w", existingName, err)
+	}
+
+	if tagCommit != head.Hash() || (annotate && !existingAnnotated) {
+		tagMsg := fmt.Sprintf("Version %s", existingName)
+
+		var tagOpts *git.CreateTagOptions
+		if annotate {
+			tagOpts = &git.CreateTagOptions{Message: tagMsg}
+		}
+
+		if delErr := repo.DeleteTag(existingName); delErr != nil && !errors.Is(delErr, git.ErrTagNotFound) {
+			return existingName, fmt.Errorf("failed to delete existing tag: %w", delErr)
+		}
+
+		if _, err = repo.CreateTag(existingName, head.Hash(), tagOpts); err != nil {
+			return existingName, fmt.Errorf("failed to create tag: %w", err)
+		}
+	}
+
+	if local {
+		return existingName, nil
+	}
+
+	remote, err := repo.Remote("origin")
+	if err != nil {
+		return existingName, fmt.Errorf("failed to get remote: %w", err)
+	}
+
+	refSpec := fmt.Sprintf("refs/tags/%s:refs/tags/%s", existingName, existingName)
+
+	if err = remote.Push(&git.PushOptions{
+		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
+		Force:    true,
+	}); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return existingName, fmt.Errorf("failed to push tag: %w", err)
+	}
+
+	return existingName, nil
+}
+
+// resolveTagCommit returns the commit hash the named tag points to and
+// whether the tag is annotated, handling both annotated and lightweight
+// tags.
+func resolveTagCommit(repo *git.Repository, name string) (plumbing.Hash, bool, error) {
+	ref, err := repo.Reference(plumbing.ReferenceName("refs/tags/"+name), false)
+	if err != nil {
+		return plumbing.ZeroHash, false, err
+	}
+
+	if ref == nil {
+		return plumbing.ZeroHash, false, plumbing.ErrReferenceNotFound
+	}
+
+	if tagObj, terr := repo.TagObject(ref.Hash()); terr == nil {
+		return tagObj.Target, true, nil
+	}
+
+	return ref.Hash(), false, nil
 }
 
 // Branch get git branch.

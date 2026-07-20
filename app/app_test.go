@@ -25,6 +25,8 @@ type testRepo struct {
 func setupGitRepo(t *testing.T, tr testRepo) string {
 	t.Helper()
 
+	t.Setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+
 	// Create a temporary directory using t.TempDir() which is automatically cleaned up
 	tmpDir := t.TempDir()
 
