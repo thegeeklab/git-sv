@@ -370,9 +370,8 @@ func (g GitSV) Tags() ([]Tag, error) {
 }
 
 // Retag moves the existing tag with the given name to HEAD. The exact name
-// is preserved (no pattern reformatting). If the tag already points to HEAD,
-// the local rewrite is skipped; a force-push is still issued when !local so
-// a stale remote ref is reconciled.
+// is preserved (no pattern reformatting). If the tag already points to HEAD
+// and no annotation upgrade is required, the local rewrite is skipped.
 func (g GitSV) Retag(existingName string, annotate, local bool) (string, error) {
 	repo, err := git.PlainOpen(".")
 	if err != nil {
@@ -384,12 +383,12 @@ func (g GitSV) Retag(existingName string, annotate, local bool) (string, error) 
 		return existingName, fmt.Errorf("failed to get HEAD reference: %w", err)
 	}
 
-	tagCommit, err := resolveTagCommit(repo, existingName)
+	tagCommit, existingAnnotated, err := resolveTagCommit(repo, existingName)
 	if err != nil {
 		return existingName, fmt.Errorf("failed to resolve tag %q: %w", existingName, err)
 	}
 
-	if tagCommit != head.Hash() {
+	if tagCommit != head.Hash() || (annotate && !existingAnnotated) {
 		tagMsg := fmt.Sprintf("Version %s", existingName)
 
 		var tagOpts *git.CreateTagOptions
@@ -427,22 +426,24 @@ func (g GitSV) Retag(existingName string, annotate, local bool) (string, error) 
 	return existingName, nil
 }
 
-// resolveTagCommit returns the commit hash the named tag points to,
-// handling both annotated and lightweight tags.
-func resolveTagCommit(repo *git.Repository, name string) (plumbing.Hash, error) {
+// resolveTagCommit returns the commit hash the named tag points to and
+// whether the tag is annotated, handling both annotated and lightweight
+// tags.
+func resolveTagCommit(repo *git.Repository, name string) (plumbing.Hash, bool, error) {
 	ref, err := repo.Reference(plumbing.ReferenceName("refs/tags/"+name), false)
 	if err != nil {
-		return plumbing.ZeroHash, err
+		return plumbing.ZeroHash, false, err
 	}
+
 	if ref == nil {
-		return plumbing.ZeroHash, plumbing.ErrReferenceNotFound
+		return plumbing.ZeroHash, false, plumbing.ErrReferenceNotFound
 	}
 
 	if tagObj, terr := repo.TagObject(ref.Hash()); terr == nil {
-		return tagObj.Target, nil
+		return tagObj.Target, true, nil
 	}
 
-	return ref.Hash(), nil
+	return ref.Hash(), false, nil
 }
 
 // Branch get git branch.

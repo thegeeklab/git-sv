@@ -72,6 +72,18 @@ func runRetag(t *testing.T, settings *app.RetagSettings) error {
 	return RetagHandler(gsv, settings)(context.Background(), nil)
 }
 
+// setupRemote initializes a bare git repository in a temp dir, adds it as
+// `origin` to the current test repo and returns the bare repo path.
+func setupRemote(t *testing.T) string {
+	t.Helper()
+
+	remoteDir := filepath.Join(t.TempDir(), "remote.git")
+	runGit(t, nil, "init", "--bare", remoteDir)
+	runGit(t, nil, "remote", "add", "origin", remoteDir)
+
+	return remoteDir
+}
+
 func TestRetagFlags(t *testing.T) {
 	flags := RetagFlags(&app.RetagSettings{})
 	assert.NotEmpty(t, flags)
@@ -193,4 +205,85 @@ func TestRetagHandlerNoopWhenTagAtHead(t *testing.T) {
 
 	// No-op: the underlying tag object must be untouched.
 	assert.Equal(t, originalTagObj, runGit(t, nil, "rev-parse", "1.0.0^{tag}"))
+}
+
+func TestRetagHandlerPushesToRemote(t *testing.T) {
+	dir := setupRetagRepo(t)
+	remoteDir := setupRemote(t)
+
+	commit(t, dir, "a.txt", "2020-01-01T00:00:00")
+	runGit(t, nil, "tag", "1.0.0")
+	head := commit(t, dir, "b.txt", "2021-01-01T00:00:00")
+
+	require.NoError(t, runRetag(t, &app.RetagSettings{}))
+
+	remoteCommit := runGit(t, []string{"GIT_DIR=" + remoteDir}, "rev-parse", "1.0.0^{commit}")
+	assert.Equal(t, head, remoteCommit)
+}
+
+func TestRetagHandlerReconcilesStaleRemote(t *testing.T) {
+	dir := setupRetagRepo(t)
+	remoteDir := setupRemote(t)
+
+	oldHead := commit(t, dir, "a.txt", "2020-01-01T00:00:00")
+	runGit(t, nil, "tag", "1.0.0")
+	runGit(t, nil, "push", "origin", "1.0.0")
+
+	// Confirm the remote is stale before retag runs.
+	assert.Equal(t, oldHead, runGit(t, []string{"GIT_DIR=" + remoteDir}, "rev-parse", "1.0.0^{commit}"))
+
+	newHead := commit(t, dir, "b.txt", "2021-01-01T00:00:00")
+	runGit(t, nil, "tag", "-f", "1.0.0", newHead)
+
+	require.NoError(t, runRetag(t, &app.RetagSettings{}))
+
+	remoteCommit := runGit(t, []string{"GIT_DIR=" + remoteDir}, "rev-parse", "1.0.0^{commit}")
+	assert.Equal(t, newHead, remoteCommit)
+}
+
+func TestRetagHandlerNoRemote(t *testing.T) {
+	dir := setupRetagRepo(t)
+	commit(t, dir, "a.txt", "2020-01-01T00:00:00")
+	runGit(t, nil, "tag", "1.0.0")
+	commit(t, dir, "b.txt", "2021-01-01T00:00:00")
+
+	err := runRetag(t, &app.RetagSettings{})
+	require.Error(t, err)
+}
+
+func TestRetagHandlerNonSemverTag(t *testing.T) {
+	dir := setupRetagRepo(t)
+	commit(t, dir, "a.txt", "2020-01-01T00:00:00")
+	runGit(t, nil, "tag", "release-2024")
+	head := commit(t, dir, "b.txt", "2021-01-01T00:00:00")
+
+	err := runRetag(t, &app.RetagSettings{Local: true})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "release-2024")
+
+	// The non-semver tag must not be moved to HEAD.
+	assert.NotEqual(t, head, runGit(t, nil, "rev-parse", "release-2024"))
+}
+
+func TestRetagHandlerUpgradesLightweightToAnnotated(t *testing.T) {
+	dir := setupRetagRepo(t)
+	commit(t, dir, "a.txt", "2020-01-01T00:00:00")
+	runGit(t, nil, "tag", "1.0.0")
+	commit(t, dir, "b.txt", "2021-01-01T00:00:00")
+
+	require.NoError(t, runRetag(t, &app.RetagSettings{Local: true, Annotate: true}))
+
+	assert.Equal(t, "tag", runGit(t, nil, "cat-file", "-t", "1.0.0"))
+}
+
+func TestRetagHandlerUpgradesLightweightToAnnotatedAtHead(t *testing.T) {
+	dir := setupRetagRepo(t)
+	commit(t, dir, "a.txt", "2020-01-01T00:00:00")
+	runGit(t, nil, "tag", "1.0.0")
+
+	// The tag is already at HEAD. The -a flag must still upgrade the
+	// lightweight tag to annotated rather than silently no-op.
+	require.NoError(t, runRetag(t, &app.RetagSettings{Local: true, Annotate: true}))
+
+	assert.Equal(t, "tag", runGit(t, nil, "cat-file", "-t", "1.0.0"))
 }
