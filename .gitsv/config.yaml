@@ -2,7 +2,7 @@
 versioning:
   update-major: []
   update-minor: [feat]
-  update-patch: [fix, perf, refactor, chore, test, ci, docs]
+  update-patch: [fix, refactor, chore, test, build, ci, docs]
 
 tag:
   pattern: "v%d.%d.%d"
