@@ -11,7 +11,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/rs/zerolog v1.35.1
 	github.com/stretchr/testify v1.12.1
-	github.com/urfave/cli/v3 v3.10.1
+	github.com/urfave/cli/v3 v3.11.0
 )
 
 require (
