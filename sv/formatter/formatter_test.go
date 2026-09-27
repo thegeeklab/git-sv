@@ -39,6 +39,22 @@ var fullChangeLog = `## v1.0.0 (2020-05-01)
 
 - break change message`
 
+var multilineBreakingChangeLog = `## v1.0.0 (2020-05-01)
+
+### Breaking Changes
+
+- first breaking change
+  with continuation line
+- second breaking change
+  also with continuation
+  and another line`
+
+var trailingNewlineBreakingChangeLog = `## v1.0.0 (2020-05-01)
+
+### Breaking Changes
+
+- breaking change with trailing newline`
+
 func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 	date, _ := time.Parse("2006-01-02", "2020-05-01")
 
@@ -76,6 +92,18 @@ func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 			name:    "full changelog",
 			input:   fullReleaseNote("1.0.0", date.Truncate(time.Minute)),
 			want:    fullChangeLog,
+			wantErr: false,
+		},
+		{
+			name:    "multiline breaking changes",
+			input:   multilineBreakingChangeReleaseNote("1.0.0", date.Truncate(time.Minute)),
+			want:    multilineBreakingChangeLog,
+			wantErr: false,
+		},
+		{
+			name:    "trailing newline in breaking change",
+			input:   trailingNewlineBreakingChangeReleaseNote("1.0.0", date.Truncate(time.Minute)),
+			want:    trailingNewlineBreakingChangeLog,
 			wantErr: false,
 		},
 	}
@@ -128,6 +156,33 @@ func fullReleaseNote(tag string, date time.Time) sv.ReleaseNote {
 	}
 
 	return sv.TestReleaseNote(v, tag, date, sections, map[string]struct{}{"a": {}})
+}
+
+func multilineBreakingChangeReleaseNote(tag string, date time.Time) sv.ReleaseNote {
+	v, _ := semver.NewVersion(tag)
+	sections := []sv.ReleaseNoteSection{
+		sv.ReleaseNoteBreakingChangeSection{
+			Name: "Breaking Changes",
+			Messages: []string{
+				"first breaking change\nwith continuation line",
+				"second breaking change\nalso with continuation\nand another line",
+			},
+		},
+	}
+
+	return sv.TestReleaseNote(v, tag, date, sections, map[string]struct{}{})
+}
+
+func trailingNewlineBreakingChangeReleaseNote(tag string, date time.Time) sv.ReleaseNote {
+	v, _ := semver.NewVersion(tag)
+	sections := []sv.ReleaseNoteSection{
+		sv.ReleaseNoteBreakingChangeSection{
+			Name:     "Breaking Changes",
+			Messages: []string{"breaking change with trailing newline\n"},
+		},
+	}
+
+	return sv.TestReleaseNote(v, tag, date, sections, map[string]struct{}{})
 }
 
 func Test_checkTemplatesExecution(t *testing.T) {
