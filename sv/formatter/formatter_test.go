@@ -55,6 +55,32 @@ var trailingNewlineBreakingChangeLog = `## v1.0.0 (2020-05-01)
 
 - breaking change with trailing newline`
 
+var complexBreakingChangeLog = `## v1.0.0 (2020-05-01)
+
+### Breaking Changes
+
+- simple single line breaking change
+- First paragraph of the breaking change description.
+
+  Second paragraph with more details about the change.
+
+  Renamed items:
+
+  - ` + "`old_a`" + ` → ` + "`new_a`" + `
+  - ` + "`old_b`" + ` → ` + "`new_b`" + `
+  - ` + "`old_c`" + ` → ` + "`new_c`" + `
+
+  Example:
+
+  ` + "```yaml" + `
+  key: value
+  nested:
+    item: example
+  ` + "```" + `
+
+  Final paragraph with *emphasis* and more details.
+- another simple single line change`
+
 func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 	date, _ := time.Parse("2006-01-02", "2020-05-01")
 
@@ -104,6 +130,12 @@ func TestOutputFormatterImpl_FormatReleaseNote(t *testing.T) {
 			name:    "trailing newline in breaking change",
 			input:   trailingNewlineBreakingChangeReleaseNote("1.0.0", date.Truncate(time.Minute)),
 			want:    trailingNewlineBreakingChangeLog,
+			wantErr: false,
+		},
+		{
+			name:    "complex multiline breaking change",
+			input:   complexBreakingChangeReleaseNote("1.0.0", date.Truncate(time.Minute)),
+			want:    complexBreakingChangeLog,
 			wantErr: false,
 		},
 	}
@@ -179,6 +211,42 @@ func trailingNewlineBreakingChangeReleaseNote(tag string, date time.Time) sv.Rel
 		sv.ReleaseNoteBreakingChangeSection{
 			Name:     "Breaking Changes",
 			Messages: []string{"breaking change with trailing newline\n"},
+		},
+	}
+
+	return sv.TestReleaseNote(v, tag, date, sections, map[string]struct{}{})
+}
+
+func complexBreakingChangeReleaseNote(tag string, date time.Time) sv.ReleaseNote {
+	v, _ := semver.NewVersion(tag)
+	complexMessage := `First paragraph of the breaking change description.
+
+Second paragraph with more details about the change.
+
+Renamed items:
+
+- ` + "`old_a`" + ` → ` + "`new_a`" + `
+- ` + "`old_b`" + ` → ` + "`new_b`" + `
+- ` + "`old_c`" + ` → ` + "`new_c`" + `
+
+Example:
+
+` + "```yaml" + `
+key: value
+nested:
+  item: example
+` + "```" + `
+
+Final paragraph with *emphasis* and more details.`
+
+	sections := []sv.ReleaseNoteSection{
+		sv.ReleaseNoteBreakingChangeSection{
+			Name: "Breaking Changes",
+			Messages: []string{
+				"simple single line breaking change",
+				complexMessage,
+				"another simple single line change",
+			},
 		},
 	}
 

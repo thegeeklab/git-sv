@@ -2,6 +2,6 @@
 
 ### {{ .Name }}
 {{ range $k,$v := .Messages }}
-- {{ trimSuffix "\n" $v | replace "\n" "\n  " }}
+- {{ indentLines "  " (trimSuffix "\n" $v) }}
 {{- end }}
 {{- end -}}

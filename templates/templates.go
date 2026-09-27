@@ -4,6 +4,7 @@ import (
 	"embed"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -54,6 +55,7 @@ func Funcs() template.FuncMap {
 	functs := sprig.FuncMap()
 
 	functs["date"] = zeroDate
+	functs["indentLines"] = indentLines
 	// functs["getsection"] = getSection
 
 	return functs
@@ -65,6 +67,17 @@ func zeroDate(fmt string, date time.Time) string {
 	}
 
 	return date.Format(fmt)
+}
+
+func indentLines(indent, s string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		if i > 0 && line != "" {
+			lines[i] = indent + line
+		}
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 //nolint:ireturn
